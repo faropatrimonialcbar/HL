@@ -1,966 +1,1034 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  PieChart, 
-  Wallet, 
-  TrendingUp, 
-  TrendingDown, 
-  Receipt, 
-  Truck, 
-  Calendar, 
-  DollarSign, 
-  Trash2, 
-  PlusCircle,
-  CreditCard,
-  ChevronLeft,
-  ChevronRight,
-  Moon,
-  Sun,
-  Activity,
-  Package,
-  ShieldCheck,
-  Send
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermanos Logística PRO</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel Standalone para JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    /* Ocultar barra de desplazamiento en elementos scrollables si se desea */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100">
+  <div id="root"></div>
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
-};
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
 
-const getBillingCycle = (dateString) => {
-  const d = new Date(dateString + 'T12:00:00');
-  let month = d.getMonth() + 1;
-  let year = d.getFullYear();
-  
-  if (d.getDate() > 15) {
-    month += 1;
-    if (month > 12) {
-      month = 1;
-      year += 1;
-    }
-  }
-  return `Corte 15/${String(month).padStart(2, '0')}/${year}`;
-};
+    // --- COMPONENTES DE ÍCONOS SVG ---
+    const PieChart = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+    );
+    const Wallet = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+    );
+    const TrendingUp = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    );
+    const TrendingDown = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+    );
+    const Receipt = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+    );
+    const Truck = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+    );
+    const Calendar = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    );
+    const DollarSign = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    );
+    const Trash2 = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+    );
+    const PlusCircle = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    );
+    const CreditCard = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    );
+    const ChevronLeft = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"/></svg>
+    );
+    const ChevronRight = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>
+    );
+    const Moon = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    );
+    const Sun = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    );
+    const Activity = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    );
+    const Package = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+    );
+    const ShieldCheck = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+    );
+    const Send = ({ size = 20, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    );
 
-const initialIncomes = [
-  { id: '1', date: '2026-09-03', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-  { id: '2', date: '2026-09-04', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-  { id: 'u1', date: '2026-09-05', source: 'Uber', amount: 25000, desc: 'Noche' },
-  { id: 'u2', date: '2026-09-06', source: 'Uber', amount: 30000, desc: 'Tarde' },
-  { id: '3', date: '2026-09-08', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-  { id: 's1', date: '2026-09-09', source: 'Sur distribución', amount: 45000, desc: 'Ruta 1' },
-  { id: '4', date: '2026-09-10', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-  { id: '5', date: '2026-09-11', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-  { id: '6', date: '2026-09-12', source: 'Mercado Libre', amount: 130000, desc: 'Fin de semana' },
-  { id: 'u3', date: '2026-09-13', source: 'Uber', amount: 35000, desc: 'Domingo' },
-  { id: '7', date: '2026-09-14', source: 'Mercado Libre', amount: 78000, desc: 'Ambulancia a otra camioneta' },
-  { id: '8', date: '2026-09-15', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-  { id: '9', date: '2026-09-16', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-  { id: 's2', date: '2026-09-16', source: 'Sur distribución', amount: 52000, desc: 'Ruta 2' },
-  { id: '10', date: '2026-09-17', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-  { id: 's3', date: '2026-09-17', source: 'Sur distribución', amount: 48000, desc: 'Ruta 1' },
-];
+    // --- FUNCIONES ÚTILES ---
+    const formatCurrency = (amount) => {
+      return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
+    };
 
-const initialExpenses = [
-  { id: 'e1', date: '2026-09-04', category: 'Combustible', amount: 25000, paidBy: 'business' },
-  { id: 'e2', date: '2026-09-05', category: 'Cochera', amount: 30000, paidBy: 'me' },
-  { id: 'e3', date: '2026-09-08', category: 'Peaje', amount: 2500, paidBy: 'me' },
-  { id: 'e4', date: '2026-09-11', category: 'Combustible', amount: 30000, paidBy: 'business' },
-  { id: 'e5', date: '2026-09-13', category: 'Lavadero', amount: 8000, paidBy: 'me' },
-  { id: 'e6', date: '2026-09-15', category: 'Seguro', amount: 45000, paidBy: 'business' },
-  { id: 'e7', date: '2026-09-16', category: 'Parchado', amount: 5000, paidBy: 'me' },
-];
+    const getBillingCycle = (dateString) => {
+      const d = new Date(dateString + 'T12:00:00');
+      let month = d.getMonth() + 1;
+      let year = d.getFullYear();
+      
+      if (d.getDate() > 15) {
+        month += 1;
+        if (month > 12) {
+          month = 1;
+          year += 1;
+        }
+      }
+      return `Corte 15/${String(month).padStart(2, '0')}/${year}`;
+    };
 
-const initialAdvances = [
-  { id: 'a1', date: '2026-09-10', amount: 15000, desc: 'Dinero para comida' }
-];
-
-export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [darkMode, setDarkMode] = useState(true);
-  const [incomes, setIncomes] = useState(() => {
-    const saved = localStorage.getItem('logistica_incomes_v5');
-    return saved ? JSON.parse(saved) : initialIncomes;
-  });
-  const [expenses, setExpenses] = useState(() => {
-    const saved = localStorage.getItem('logistica_expenses_v5');
-    return saved ? JSON.parse(saved) : initialExpenses;
-  });
-  const [advances, setAdvances] = useState(() => {
-    const saved = localStorage.getItem('logistica_advances_v1');
-    return saved ? JSON.parse(saved) : initialAdvances;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('logistica_incomes_v5', JSON.stringify(incomes));
-  }, [incomes]);
-
-  useEffect(() => {
-    localStorage.setItem('logistica_expenses_v5', JSON.stringify(expenses));
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem('logistica_advances_v1', JSON.stringify(advances));
-  }, [advances]);
-
-  const financialData = useMemo(() => {
-    const totalIncome = incomes.reduce((acc, curr) => acc + Number(curr.amount), 0);
-    const totalExpense = expenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
-    const totalAdvances = advances.reduce((acc, curr) => acc + Number(curr.amount), 0);
-    
-    const incomesBySource = incomes.reduce((acc, curr) => {
-      acc[curr.source] = (acc[curr.source] || 0) + Number(curr.amount);
-      return acc;
-    }, {});
-
-    const allDates = [
-      ...incomes.map(i => i.date), 
-      ...expenses.map(e => e.date),
-      ...advances.map(a => a.date)
+    // --- DATOS INICIALES DE PRUEBA ---
+    const initialIncomes = [
+      { id: '1', date: '2026-09-03', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
+      { id: '2', date: '2026-09-04', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
+      { id: 'u1', date: '2026-09-05', source: 'Uber', amount: 25000, desc: 'Noche' },
+      { id: 'u2', date: '2026-09-06', source: 'Uber', amount: 30000, desc: 'Tarde' },
+      { id: '3', date: '2026-09-08', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
+      { id: 's1', date: '2026-09-09', source: 'Sur distribución', amount: 45000, desc: 'Ruta 1' },
+      { id: '4', date: '2026-09-10', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
+      { id: '5', date: '2026-09-11', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
+      { id: '6', date: '2026-09-12', source: 'Mercado Libre', amount: 130000, desc: 'Fin de semana' },
+      { id: 'u3', date: '2026-09-13', source: 'Uber', amount: 35000, desc: 'Domingo' },
+      { id: '7', date: '2026-09-14', source: 'Mercado Libre', amount: 78000, desc: 'Ambulancia a otra camioneta' },
+      { id: '8', date: '2026-09-15', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
+      { id: '9', date: '2026-09-16', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
+      { id: 's2', date: '2026-09-16', source: 'Sur distribución', amount: 52000, desc: 'Ruta 2' },
+      { id: '10', date: '2026-09-17', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
+      { id: 's3', date: '2026-09-17', source: 'Sur distribución', amount: 48000, desc: 'Ruta 1' },
     ];
 
-    let weeks = [];
-    let currentDebt = 0;
-    let totalSimon = 0;
-    let totalFranBase = 0;
-    let totalFranReimbursed = 0;
-    let totalAdvancesSum = totalAdvances;
+    const initialExpenses = [
+      { id: 'e1', date: '2026-09-04', category: 'Combustible', amount: 25000, paidBy: 'business' },
+      { id: 'e2', date: '2026-09-05', category: 'Cochera', amount: 30000, paidBy: 'me' },
+      { id: 'e3', date: '2026-09-08', category: 'Peaje', amount: 2500, paidBy: 'me' },
+      { id: 'e4', date: '2026-09-11', category: 'Combustible', amount: 30000, paidBy: 'business' },
+      { id: 'e5', date: '2026-09-13', category: 'Lavadero', amount: 8000, paidBy: 'me' },
+      { id: 'e6', date: '2026-09-15', category: 'Seguro', amount: 45000, paidBy: 'business' },
+      { id: 'e7', date: '2026-09-16', category: 'Parchado', amount: 5000, paidBy: 'me' },
+    ];
 
-    if (allDates.length > 0) {
-      const minDateStr = allDates.reduce((min, d) => d < min ? d : min);
-      const minDate = new Date(minDateStr + 'T12:00:00');
-      const day = minDate.getDay();
-      const diffToMonday = day === 0 ? -6 : 1 - day;
-      let currentWeekStart = new Date(minDate);
-      currentWeekStart.setDate(minDate.getDate() + diffToMonday);
-      currentWeekStart.setHours(0,0,0,0);
+    const initialAdvances = [
+      { id: 'a1', date: '2026-09-10', amount: 15000, desc: 'Dinero para comida' }
+    ];
 
-      const today = new Date();
-      today.setHours(23,59,59,999);
-
-      while (currentWeekStart <= today) {
-        const weekEnd = new Date(currentWeekStart);
-        weekEnd.setDate(currentWeekStart.getDate() + 6);
-        weekEnd.setHours(23,59,59,999);
-
-        const startStr = currentWeekStart.toISOString().split('T')[0];
-        const endStr = weekEnd.toISOString().split('T')[0];
-
-        const weekIncomes = incomes.filter(i => i.date >= startStr && i.date <= endStr);
-        const weekExpenses = expenses.filter(e => e.date >= startStr && e.date <= endStr);
-        const weekAdvances = advances.filter(a => a.date >= startStr && a.date <= endStr);
-
-        const tIncome = weekIncomes.reduce((acc, curr) => acc + Number(curr.amount), 0);
-        const tExpense = weekExpenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
-        const tExpenseMe = weekExpenses.filter(e => e.paidBy === 'me').reduce((acc, curr) => acc + Number(curr.amount), 0);
-        const tExpenseBiz = tExpense - tExpenseMe;
-        const tAdvances = weekAdvances.reduce((acc, curr) => acc + Number(curr.amount), 0);
-        
-        const weekNet = tIncome - tExpense;
-        const cashInHand = tIncome - tExpenseBiz;
-        
-        const reimbursedThisWeekExp = Math.min(Math.max(0, cashInHand), tExpenseMe);
-        const remainingCash = cashInHand - reimbursedThisWeekExp;
-        
-        const debtGeneratedThisWeekExp = tExpenseMe - reimbursedThisWeekExp;
-        const deficitBizGenerated = Math.abs(Math.min(0, cashInHand));
-        
-        const debtGenerated = debtGeneratedThisWeekExp + deficitBizGenerated;
-        
-        let reimbursedHistorical = 0;
-        let distributable = 0;
-
-        if (weekNet < 0) {
-          currentDebt += debtGenerated;
-        } else {
-          reimbursedHistorical = Math.min(currentDebt, remainingCash);
-          currentDebt -= reimbursedHistorical;
-          distributable = remainingCash - reimbursedHistorical;
-        }
-
-        const simonBase = distributable * 0.45;
-        const franBase = distributable * 0.55;
-        const totalReimbursementWeek = reimbursedThisWeekExp + reimbursedHistorical;
-
-        // Apply advances: deducted from Simon, added to Fran
-        const simonFinal = simonBase - tAdvances;
-        const franFinal = franBase + totalReimbursementWeek + tAdvances;
-
-        totalSimon += simonFinal;
-        totalFranBase += franBase;
-        totalFranReimbursed += totalReimbursementWeek;
-
-        if (tIncome > 0 || tExpense > 0 || debtGenerated > 0 || reimbursedHistorical > 0 || tAdvances > 0) {
-          weeks.push({
-            id: startStr,
-            label: `${currentWeekStart.toLocaleDateString('es-AR', {day:'2-digit', month:'short'})} al ${weekEnd.toLocaleDateString('es-AR', {day:'2-digit', month:'short'})}`,
-            tIncome,
-            tExpense,
-            tExpenseMe,
-            tExpenseBiz,
-            tAdvances,
-            weekNet,
-            reimbursedThisWeekExp,
-            debtGeneratedThisWeekExp,
-            deficitBizGenerated,
-            debtGenerated,
-            reimbursedHistorical,
-            distributable,
-            simon: simonFinal,
-            simonGross: simonBase,
-            franBase,
-            totalReimbursementWeek,
-            franFinal,
-            currentDebt
-          });
-        }
-
-        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-      }
-    }
-
-    return {
-      stats: {
-        totalIncome,
-        totalExpense,
-        totalAdvances,
-        netProfit: totalIncome - totalExpense,
-        incomesBySource,
-        totalSimon,
-        totalFranBase,
-        totalFranReimbursed,
-        currentDebt
-      },
-      weeklyEvolution: weeks.reverse()
-    };
-  }, [incomes, expenses, advances]);
-
-  const Dashboard = () => {
-    const [weekOffset, setWeekOffset] = useState(-1);
-
-    const weeklyLiq = useMemo(() => {
-      const d = new Date();
-      d.setHours(12, 0, 0, 0); 
-      const day = d.getDay(); 
-      const diffToMonday = day === 0 ? -6 : 1 - day;
-      
-      const start = new Date(d);
-      start.setDate(d.getDate() + diffToMonday + (weekOffset * 7));
-      
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-
-      const formatD = (dateObj) => {
-        const y = dateObj.getFullYear();
-        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const da = String(dateObj.getDate()).padStart(2, '0');
-        return `${y}-${m}-${da}`;
-      };
-      
-      const startStr = formatD(start);
-      const endStr = formatD(end);
-
-      let mlCycleStr = null;
-      for (let i = 0; i < 7; i++) {
-        const curr = new Date(start);
-        curr.setDate(start.getDate() + i);
-        if (curr.getDate() === 15) {
-          const y = curr.getFullYear();
-          const m = String(curr.getMonth() + 1).padStart(2, '0');
-          mlCycleStr = `Corte 15/${m}/${y}`;
-          break;
-        }
-      }
-
-      let surTotal = 0;
-      let uberTotal = 0;
-      let mlTotal = 0;
-
-      incomes.forEach((inc) => {
-        if (inc.source === 'Sur distribución' && inc.date >= startStr && inc.date <= endStr) {
-          surTotal += Number(inc.amount);
-        }
-        if (inc.source === 'Uber' && inc.date >= startStr && inc.date <= endStr) {
-          uberTotal += Number(inc.amount);
-        }
-        if (inc.source === 'Mercado Libre' && mlCycleStr && getBillingCycle(inc.date) === mlCycleStr) {
-          mlTotal += Number(inc.amount);
-        }
+    function App() {
+      const [activeTab, setActiveTab] = useState('dashboard');
+      const [darkMode, setDarkMode] = useState(true);
+      const [incomes, setIncomes] = useState(() => {
+        const saved = localStorage.getItem('logistica_incomes_v5');
+        return saved ? JSON.parse(saved) : initialIncomes;
+      });
+      const [expenses, setExpenses] = useState(() => {
+        const saved = localStorage.getItem('logistica_expenses_v5');
+        return saved ? JSON.parse(saved) : initialExpenses;
+      });
+      const [advances, setAdvances] = useState(() => {
+        const saved = localStorage.getItem('logistica_advances_v1');
+        return saved ? JSON.parse(saved) : initialAdvances;
       });
 
-      return {
-        startStr,
-        endStr,
-        startFormatted: start.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }),
-        endFormatted: end.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }),
-        surTotal,
-        uberTotal,
-        mlTotal,
-        mlCycleStr,
-        total: surTotal + uberTotal + mlTotal
-      };
-    }, [incomes, weekOffset]);
+      useEffect(() => {
+        localStorage.setItem('logistica_incomes_v5', JSON.stringify(incomes));
+      }, [incomes]);
 
-    return (
-      <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-cyan-500/30 text-slate-100 shadow-cyan-950/20' : 'bg-white border-slate-200 text-slate-800'}`}>
-            <div className="absolute top-0 right-0 p-4 opacity-10 text-cyan-400"><TrendingUp size={64} /></div>
-            <div className="flex justify-between items-start mb-4 relative z-10">
-              <div>
-                <p className={`text-xs font-semibold tracking-wider uppercase ${darkMode ? 'text-cyan-400' : 'text-blue-600'}`}>Ingresos Totales</p>
-                <h3 className="text-3xl font-black mt-1 tracking-tight">{formatCurrency(financialData.stats.totalIncome)}</h3>
-              </div>
-              <div className={`p-3 rounded-xl border ${darkMode ? 'bg-cyan-950/50 border-cyan-500/30 text-cyan-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
-                <TrendingUp size={22} />
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-blue-600"></div>
-          </div>
+      useEffect(() => {
+        localStorage.setItem('logistica_expenses_v5', JSON.stringify(expenses));
+      }, [expenses]);
 
-          <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-rose-500/30 text-slate-100 shadow-rose-950/20' : 'bg-white border-slate-200 text-slate-800'}`}>
-            <div className="absolute top-0 right-0 p-4 opacity-10 text-rose-400"><TrendingDown size={64} /></div>
-            <div className="flex justify-between items-start mb-4 relative z-10">
-              <div>
-                <p className={`text-xs font-semibold tracking-wider uppercase ${darkMode ? 'text-rose-400' : 'text-rose-600'}`}>Gastos Totales</p>
-                <h3 className="text-3xl font-black mt-1 tracking-tight">{formatCurrency(financialData.stats.totalExpense)}</h3>
-              </div>
-              <div className={`p-3 rounded-xl border ${darkMode ? 'bg-rose-950/50 border-rose-500/30 text-rose-400' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
-                <TrendingDown size={22} />
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-orange-600"></div>
-          </div>
+      useEffect(() => {
+        localStorage.setItem('logistica_advances_v1', JSON.stringify(advances));
+      }, [advances]);
 
-          <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-emerald-500/30 text-slate-100 shadow-emerald-950/20' : 'bg-white border-slate-200 text-slate-800'}`}>
-            <div className="absolute top-0 right-0 p-4 opacity-10 text-emerald-400"><Wallet size={64} /></div>
-            <div className="flex justify-between items-start mb-4 relative z-10">
-              <div>
-                <p className={`text-xs font-semibold tracking-wider uppercase ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>Ganancia Neta</p>
-                <h3 className="text-3xl font-black mt-1 tracking-tight text-emerald-500">{formatCurrency(financialData.stats.netProfit)}</h3>
-              </div>
-              <div className={`p-3 rounded-xl border ${darkMode ? 'bg-emerald-950/50 border-emerald-500/30 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
-                <Wallet size={22} />
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
-          </div>
-        </div>
-
-        <h2 className={`text-lg font-bold mt-8 mb-4 border-b pb-2 flex items-center gap-2 ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>
-          <Activity size={18} className="text-cyan-500" /> Desglose por Operación
-        </h2>
+      const financialData = useMemo(() => {
+        const totalIncome = incomes.reduce((acc, curr) => acc + Number(curr.amount), 0);
+        const totalExpense = expenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
+        const totalAdvances = advances.reduce((acc, curr) => acc + Number(curr.amount), 0);
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-yellow-500/40' : 'bg-white border-slate-200 hover:shadow-xl'}`}>
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FFE600]"></div>
-            <p className={`text-xs uppercase font-bold mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Mercado Libre</p>
-            <p className={`text-2xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.incomesBySource['Mercado Libre'] || 0)}</p>
-          </div>
+        const incomesBySource = incomes.reduce((acc, curr) => {
+          acc[curr.source] = (acc[curr.source] || 0) + Number(curr.amount);
+          return acc;
+        }, {});
+
+        const allDates = [
+          ...incomes.map(i => i.date), 
+          ...expenses.map(e => e.date),
+          ...advances.map(a => a.date)
+        ];
+
+        let weeks = [];
+        let currentDebt = 0;
+        let totalSimon = 0;
+        let totalFranBase = 0;
+        let totalFranReimbursed = 0;
+
+        if (allDates.length > 0) {
+          const minDateStr = allDates.reduce((min, d) => d < min ? d : min);
+          const minDate = new Date(minDateStr + 'T12:00:00');
+          const day = minDate.getDay();
+          const diffToMonday = day === 0 ? -6 : 1 - day;
+          let currentWeekStart = new Date(minDate);
+          currentWeekStart.setDate(minDate.getDate() + diffToMonday);
+          currentWeekStart.setHours(0,0,0,0);
+
+          const today = new Date();
+          today.setHours(23,59,59,999);
+
+          while (currentWeekStart <= today) {
+            const weekEnd = new Date(currentWeekStart);
+            weekEnd.setDate(currentWeekStart.getDate() + 6);
+            weekEnd.setHours(23,59,59,999);
+
+            const startStr = currentWeekStart.toISOString().split('T')[0];
+            const endStr = weekEnd.toISOString().split('T')[0];
+
+            const weekIncomes = incomes.filter(i => i.date >= startStr && i.date <= endStr);
+            const weekExpenses = expenses.filter(e => e.date >= startStr && e.date <= endStr);
+            const weekAdvances = advances.filter(a => a.date >= startStr && a.date <= endStr);
+
+            const tIncome = weekIncomes.reduce((acc, curr) => acc + Number(curr.amount), 0);
+            const tExpense = weekExpenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
+            const tExpenseMe = weekExpenses.filter(e => e.paidBy === 'me').reduce((acc, curr) => acc + Number(curr.amount), 0);
+            const tExpenseBiz = tExpense - tExpenseMe;
+            const tAdvances = weekAdvances.reduce((acc, curr) => acc + Number(curr.amount), 0);
+            
+            const weekNet = tIncome - tExpense;
+            const cashInHand = tIncome - tExpenseBiz;
+            
+            const reimbursedThisWeekExp = Math.min(Math.max(0, cashInHand), tExpenseMe);
+            const remainingCash = cashInHand - reimbursedThisWeekExp;
+            
+            const debtGeneratedThisWeekExp = tExpenseMe - reimbursedThisWeekExp;
+            const deficitBizGenerated = Math.abs(Math.min(0, cashInHand));
+            
+            const debtGenerated = debtGeneratedThisWeekExp + deficitBizGenerated;
+            
+            let reimbursedHistorical = 0;
+            let distributable = 0;
+
+            if (weekNet < 0) {
+              currentDebt += debtGenerated;
+            } else {
+              reimbursedHistorical = Math.min(currentDebt, remainingCash);
+              currentDebt -= reimbursedHistorical;
+              distributable = remainingCash - reimbursedHistorical;
+            }
+
+            const simonBase = distributable * 0.45;
+            const franBase = distributable * 0.55;
+            const totalReimbursementWeek = reimbursedThisWeekExp + reimbursedHistorical;
+
+            const simonFinal = simonBase - tAdvances;
+            const franFinal = franBase + totalReimbursementWeek + tAdvances;
+
+            totalSimon += simonFinal;
+            totalFranBase += franBase;
+            totalFranReimbursed += totalReimbursementWeek;
+
+            if (tIncome > 0 || tExpense > 0 || debtGenerated > 0 || reimbursedHistorical > 0 || tAdvances > 0) {
+              weeks.push({
+                id: startStr,
+                label: `${currentWeekStart.toLocaleDateString('es-AR', {day:'2-digit', month:'short'})} al ${weekEnd.toLocaleDateString('es-AR', {day:'2-digit', month:'short'})}`,
+                tIncome,
+                tExpense,
+                tExpenseMe,
+                tExpenseBiz,
+                tAdvances,
+                weekNet,
+                reimbursedThisWeekExp,
+                debtGeneratedThisWeekExp,
+                deficitBizGenerated,
+                debtGenerated,
+                reimbursedHistorical,
+                distributable,
+                simon: simonFinal,
+                simonGross: simonBase,
+                franBase,
+                totalReimbursementWeek,
+                franFinal,
+                currentDebt
+              });
+            }
+
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+          }
+        }
+
+        return {
+          stats: {
+            totalIncome,
+            totalExpense,
+            totalAdvances,
+            netProfit: totalIncome - totalExpense,
+            incomesBySource,
+            totalSimon,
+            totalFranBase,
+            totalFranReimbursed,
+            currentDebt
+          },
+          weeklyEvolution: weeks.reverse()
+        };
+      }, [incomes, expenses, advances]);
+
+      const Dashboard = () => {
+        const [weekOffset, setWeekOffset] = useState(-1);
+
+        const weeklyLiq = useMemo(() => {
+          const d = new Date();
+          d.setHours(12, 0, 0, 0); 
+          const day = d.getDay(); 
+          const diffToMonday = day === 0 ? -6 : 1 - day;
           
-          <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-blue-500/40' : 'bg-white border-slate-200 hover:shadow-xl'}`}>
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
-            <p className={`text-xs uppercase font-bold mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Sur distribución</p>
-            <p className={`text-2xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.incomesBySource['Sur distribución'] || 0)}</p>
-          </div>
+          const start = new Date(d);
+          start.setDate(d.getDate() + diffToMonday + (weekOffset * 7));
+          
+          const end = new Date(start);
+          end.setDate(start.getDate() + 6);
 
-          <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-cyan-500/40' : 'bg-white border-slate-200 hover:shadow-xl'}`}>
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-400"></div>
-            <p className={`text-xs uppercase font-bold mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Uber</p>
-            <p className={`text-2xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.incomesBySource['Uber'] || 0)}</p>
-          </div>
-        </div>
+          const formatD = (dateObj) => {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const da = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${da}`;
+          };
+          
+          const startStr = formatD(start);
+          const endStr = formatD(end);
 
-        <h2 className={`text-lg font-bold mt-8 mb-4 border-b pb-2 flex flex-col md:flex-row md:justify-between md:items-center gap-3 ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>
-          <span className="flex items-center gap-2"><Package size={18} className="text-yellow-500" /> Liquidación Semanal a Cobrar</span>
-          <div className="flex items-center space-x-2 text-sm font-normal">
-            <button onClick={() => setWeekOffset(o => o - 1)} className={`p-2 rounded-xl transition ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
-              <ChevronLeft size={16} />
-            </button>
-            <span className={`px-4 py-1.5 rounded-xl text-xs font-bold border shadow-sm whitespace-nowrap ${darkMode ? 'bg-slate-900 border-slate-700 text-cyan-400' : 'bg-white border-slate-200 text-slate-700'}`}>
-              {weeklyLiq.startFormatted} al {weeklyLiq.endFormatted}
-            </span>
-            <button onClick={() => setWeekOffset(o => o + 1)} className={`p-2 rounded-xl transition ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </h2>
-        
-        <div className={`rounded-2xl p-6 shadow-xl border backdrop-blur-md relative overflow-hidden ${darkMode ? 'bg-slate-900/80 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
-          <div className="space-y-3 relative z-10 text-sm">
-            <div className={`flex justify-between items-center border-b pb-3 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-              <span className="flex items-center gap-2 font-medium">
-                 <div className="w-2 h-2 rounded-full bg-blue-500"></div> Sur distribución (Semanal)
-              </span>
-              <span className="font-bold">{formatCurrency(weeklyLiq.surTotal)}</span>
+          let mlCycleStr = null;
+          for (let i = 0; i < 7; i++) {
+            const curr = new Date(start);
+            curr.setDate(start.getDate() + i);
+            if (curr.getDate() === 15) {
+              const y = curr.getFullYear();
+              const m = String(curr.getMonth() + 1).padStart(2, '0');
+              mlCycleStr = `Corte 15/${m}/${y}`;
+              break;
+            }
+          }
+
+          let surTotal = 0;
+          let uberTotal = 0;
+          let mlTotal = 0;
+
+          incomes.forEach((inc) => {
+            if (inc.source === 'Sur distribución' && inc.date >= startStr && inc.date <= endStr) {
+              surTotal += Number(inc.amount);
+            }
+            if (inc.source === 'Uber' && inc.date >= startStr && inc.date <= endStr) {
+              uberTotal += Number(inc.amount);
+            }
+            if (inc.source === 'Mercado Libre' && mlCycleStr && getBillingCycle(inc.date) === mlCycleStr) {
+              mlTotal += Number(inc.amount);
+            }
+          });
+
+          return {
+            startStr,
+            endStr,
+            startFormatted: start.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }),
+            endFormatted: end.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }),
+            surTotal,
+            uberTotal,
+            mlTotal,
+            mlCycleStr,
+            total: surTotal + uberTotal + mlTotal
+          };
+        }, [incomes, weekOffset]);
+
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-cyan-500/30 text-slate-100 shadow-cyan-950/20' : 'bg-white border-slate-200 text-slate-800'}`}>
+                <div className="absolute top-0 right-0 p-4 opacity-10 text-cyan-400"><TrendingUp size={64} /></div>
+                <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div>
+                    <p className={`text-xs font-semibold tracking-wider uppercase ${darkMode ? 'text-cyan-400' : 'text-blue-600'}`}>Ingresos Totales</p>
+                    <h3 className="text-3xl font-black mt-1 tracking-tight">{formatCurrency(financialData.stats.totalIncome)}</h3>
+                  </div>
+                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-cyan-950/50 border-cyan-500/30 text-cyan-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                    <TrendingUp size={22} />
+                  </div>
+                </div>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-blue-600"></div>
+              </div>
+
+              <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-rose-500/30 text-slate-100 shadow-rose-950/20' : 'bg-white border-slate-200 text-slate-800'}`}>
+                <div className="absolute top-0 right-0 p-4 opacity-10 text-rose-400"><TrendingDown size={64} /></div>
+                <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div>
+                    <p className={`text-xs font-semibold tracking-wider uppercase ${darkMode ? 'text-rose-400' : 'text-rose-600'}`}>Gastos Totales</p>
+                    <h3 className="text-3xl font-black mt-1 tracking-tight">{formatCurrency(financialData.stats.totalExpense)}</h3>
+                  </div>
+                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-rose-950/50 border-rose-500/30 text-rose-400' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
+                    <TrendingDown size={22} />
+                  </div>
+                </div>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-orange-600"></div>
+              </div>
+
+              <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-emerald-500/30 text-slate-100 shadow-emerald-950/20' : 'bg-white border-slate-200 text-slate-800'}`}>
+                <div className="absolute top-0 right-0 p-4 opacity-10 text-emerald-400"><Wallet size={64} /></div>
+                <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div>
+                    <p className={`text-xs font-semibold tracking-wider uppercase ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>Ganancia Neta</p>
+                    <h3 className="text-3xl font-black mt-1 tracking-tight text-emerald-500">{formatCurrency(financialData.stats.netProfit)}</h3>
+                  </div>
+                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-emerald-950/50 border-emerald-500/30 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                    <Wallet size={22} />
+                  </div>
+                </div>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
+              </div>
             </div>
+
+            <h2 className={`text-lg font-bold mt-8 mb-4 border-b pb-2 flex items-center gap-2 ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>
+              <Activity size={18} className="text-cyan-500" /> Desglose por Operación
+            </h2>
             
-            <div className={`flex justify-between items-center border-b pb-3 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-              <span className="flex items-center gap-2 font-medium">
-                 <div className="w-2 h-2 rounded-full bg-cyan-400"></div> Uber (Semanal)
-              </span>
-              <span className="font-bold">{formatCurrency(weeklyLiq.uberTotal)}</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-yellow-500/40' : 'bg-white border-slate-200 hover:shadow-xl'}`}>
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FFE600]"></div>
+                <p className={`text-xs uppercase font-bold mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Mercado Libre</p>
+                <p className={`text-2xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.incomesBySource['Mercado Libre'] || 0)}</p>
+              </div>
+              
+              <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-blue-500/40' : 'bg-white border-slate-200 hover:shadow-xl'}`}>
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
+                <p className={`text-xs uppercase font-bold mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Sur distribución</p>
+                <p className={`text-2xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.incomesBySource['Sur distribución'] || 0)}</p>
+              </div>
+
+              <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-cyan-500/40' : 'bg-white border-slate-200 hover:shadow-xl'}`}>
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-400"></div>
+                <p className={`text-xs uppercase font-bold mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Uber</p>
+                <p className={`text-2xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.incomesBySource['Uber'] || 0)}</p>
+              </div>
             </div>
+
+            <h2 className={`text-lg font-bold mt-8 mb-4 border-b pb-2 flex flex-col md:flex-row md:justify-between md:items-center gap-3 ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>
+              <span className="flex items-center gap-2"><Package size={18} className="text-yellow-500" /> Liquidación Semanal a Cobrar</span>
+              <div className="flex items-center space-x-2 text-sm font-normal">
+                <button onClick={() => setWeekOffset(o => o - 1)} className={`p-2 rounded-xl transition ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
+                  <ChevronLeft size={16} />
+                </button>
+                <span className={`px-4 py-1.5 rounded-xl text-xs font-bold border shadow-sm whitespace-nowrap ${darkMode ? 'bg-slate-900 border-slate-700 text-cyan-400' : 'bg-white border-slate-200 text-slate-700'}`}>
+                  {weeklyLiq.startFormatted} al {weeklyLiq.endFormatted}
+                </span>
+                <button onClick={() => setWeekOffset(o => o + 1)} className={`p-2 rounded-xl transition ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </h2>
             
-            {weeklyLiq.mlCycleStr ? (
-              <div className={`flex justify-between items-center p-3 rounded-xl border ${darkMode ? 'bg-yellow-950/20 border-yellow-500/30 text-yellow-200' : 'bg-yellow-50/80 border-yellow-200 text-slate-800'}`}>
-                <div>
-                  <span className="font-semibold flex items-center gap-2">
-                     <div className="w-2 h-2 rounded-full bg-[#FFE600]"></div> Mercado Libre (Corte mensual)
+            <div className={`rounded-2xl p-6 shadow-xl border backdrop-blur-md relative overflow-hidden ${darkMode ? 'bg-slate-900/80 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
+              <div className="space-y-3 relative z-10 text-sm">
+                <div className={`flex justify-between items-center border-b pb-3 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+                  <span className="flex items-center gap-2 font-medium">
+                     <div className="w-2 h-2 rounded-full bg-blue-500"></div> Sur distribución (Semanal)
                   </span>
-                  <span className={`text-xs block mt-0.5 ${darkMode ? 'text-yellow-400/80' : 'text-slate-500'}`}>Ciclo: {weeklyLiq.mlCycleStr}</span>
+                  <span className="font-bold">{formatCurrency(weeklyLiq.surTotal)}</span>
                 </div>
-                <span className="font-black text-base">{formatCurrency(weeklyLiq.mlTotal)}</span>
-              </div>
-            ) : (
-               <div className={`flex justify-between items-center p-3 rounded-xl border border-dashed opacity-50 text-xs ${darkMode ? 'border-slate-800 text-slate-500' : 'border-slate-200 text-slate-400'}`}>
-                  <span>Mercado Libre (Sin corte esta semana)</span>
-                  <span>{formatCurrency(0)}</span>
-               </div>
-            )}
-
-            <div className="flex justify-between items-center pt-2">
-              <span className="font-bold uppercase tracking-wider text-xs">Total Bruto a Ingresar</span>
-              <span className="text-2xl font-black text-emerald-400">{formatCurrency(weeklyLiq.total)}</span>
-            </div>
-          </div>
-        </div>
-
-        <h2 className={`text-lg font-bold mt-8 mb-4 border-b pb-2 flex items-center gap-2 ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>
-          <ShieldCheck size={18} className="text-emerald-500" /> Distribución de Ganancias
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className={`rounded-2xl p-6 shadow-xl border relative overflow-hidden ${darkMode ? 'bg-slate-900/80 border-blue-500/30' : 'bg-white border-slate-200'}`}>
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
-            <div className="flex items-center gap-3 mb-4 text-blue-400">
-              <PieChart size={20} />
-              <h3 className="font-bold tracking-wider text-xs uppercase">Simón (45%)</h3>
-            </div>
-            <p className={`text-3xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.totalSimon)}</p>
-          </div>
-          
-          <div className={`rounded-2xl p-6 shadow-xl border relative overflow-hidden ${darkMode ? 'bg-slate-900/80 border-emerald-500/30' : 'bg-emerald-50 border-emerald-100'}`}>
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
-            <div className="flex items-center gap-3 mb-4 text-emerald-500">
-              <Wallet size={20} />
-              <h3 className="font-bold tracking-wider text-xs uppercase">Fran (55%)</h3>
-            </div>
-            <div className="space-y-2">
-              <div className={`flex justify-between text-xs ${darkMode ? 'text-slate-400' : 'text-emerald-800'}`}>
-                <span>Ganancia base:</span>
-                <span className="font-semibold">{formatCurrency(financialData.stats.totalFranBase)}</span>
-              </div>
-              {financialData.stats.totalFranReimbursed > 0 && (
-                <div className={`flex justify-between text-xs ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
-                  <span>Reintegros de gastos:</span>
-                  <span className="font-semibold">+{formatCurrency(financialData.stats.totalFranReimbursed)}</span>
-                </div>
-              )}
-              {financialData.stats.currentDebt > 0 && (
-                <div className="flex justify-between text-xs text-rose-400 font-semibold pt-1">
-                  <span>Deuda a favor pendiente:</span>
-                  <span>+{formatCurrency(financialData.stats.currentDebt)}</span>
-                </div>
-              )}
-              <div className={`border-t pt-2 mt-2 ${darkMode ? 'border-slate-800' : 'border-emerald-200'}`}>
-                <p className="text-3xl font-black text-emerald-500">{formatCurrency(financialData.stats.totalFranBase + financialData.stats.totalFranReimbursed)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <h2 className={`text-lg font-bold mt-10 mb-4 border-b pb-2 ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>Evolución Histórica Semanal</h2>
-        <div className="space-y-4">
-          {financialData.weeklyEvolution.length === 0 ? (
-            <p className={`text-center py-6 text-sm rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>No hay datos suficientes para mostrar la evolución.</p>
-          ) : (
-            financialData.weeklyEvolution.map((week) => (
-              <div key={week.id} className={`rounded-2xl p-5 shadow-xl border transition hover:scale-[1.01] ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <h3 className={`font-bold mb-3 border-b pb-2 text-sm ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>{week.label}</h3>
                 
-                <div className="grid grid-cols-2 gap-4 mb-3">
-                  <div>
-                    <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Ingresos</p>
-                    <p className="font-black text-cyan-400 text-lg">{formatCurrency(week.tIncome)}</p>
-                  </div>
-                  <div>
-                    <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Gastos Totales</p>
-                    <p className="font-black text-rose-500 text-lg">{formatCurrency(week.tExpense)}</p>
-                  </div>
+                <div className={`flex justify-between items-center border-b pb-3 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+                  <span className="flex items-center gap-2 font-medium">
+                     <div className="w-2 h-2 rounded-full bg-cyan-400"></div> Uber (Semanal)
+                  </span>
+                  <span className="font-bold">{formatCurrency(weeklyLiq.uberTotal)}</span>
                 </div>
+                
+                {weeklyLiq.mlCycleStr ? (
+                  <div className={`flex justify-between items-center p-3 rounded-xl border ${darkMode ? 'bg-yellow-950/20 border-yellow-500/30 text-yellow-200' : 'bg-yellow-50/80 border-yellow-200 text-slate-800'}`}>
+                    <div>
+                      <span className="font-semibold flex items-center gap-2">
+                         <div className="w-2 h-2 rounded-full bg-[#FFE600]"></div> Mercado Libre (Corte mensual)
+                      </span>
+                      <span className={`text-xs block mt-0.5 ${darkMode ? 'text-yellow-400/80' : 'text-slate-500'}`}>Ciclo: {weeklyLiq.mlCycleStr}</span>
+                    </div>
+                    <span className="font-black text-base">{formatCurrency(weeklyLiq.mlTotal)}</span>
+                  </div>
+                ) : (
+                   <div className={`flex justify-between items-center p-3 rounded-xl border border-dashed opacity-50 text-xs ${darkMode ? 'border-slate-800 text-slate-500' : 'border-slate-200 text-slate-400'}`}>
+                      <span>Mercado Libre (Sin corte esta semana)</span>
+                      <span>{formatCurrency(0)}</span>
+                   </div>
+                )}
 
-                <div className={`mb-4 space-y-1.5 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                  {week.tExpenseBiz > 0 && (
-                    <div className="flex justify-between px-1">
-                      <span>Pagado c/ Fondo del Negocio:</span>
-                      <span className="font-medium">{formatCurrency(week.tExpenseBiz)}</span>
+                <div className="flex justify-between items-center pt-2">
+                  <span className="font-bold uppercase tracking-wider text-xs">Total Bruto a Ingresar</span>
+                  <span className="text-2xl font-black text-emerald-400">{formatCurrency(weeklyLiq.total)}</span>
+                </div>
+              </div>
+            </div>
+
+            <h2 className={`text-lg font-bold mt-8 mb-4 border-b pb-2 flex items-center gap-2 ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>
+              <ShieldCheck size={18} className="text-emerald-500" /> Distribución de Ganancias
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`rounded-2xl p-6 shadow-xl border relative overflow-hidden ${darkMode ? 'bg-slate-900/80 border-blue-500/30' : 'bg-white border-slate-200'}`}>
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
+                <div className="flex items-center gap-3 mb-4 text-blue-400">
+                  <PieChart size={20} />
+                  <h3 className="font-bold tracking-wider text-xs uppercase">Simón (45%)</h3>
+                </div>
+                <p className={`text-3xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.totalSimon)}</p>
+              </div>
+              
+              <div className={`rounded-2xl p-6 shadow-xl border relative overflow-hidden ${darkMode ? 'bg-slate-900/80 border-emerald-500/30' : 'bg-emerald-50 border-emerald-100'}`}>
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+                <div className="flex items-center gap-3 mb-4 text-emerald-500">
+                  <Wallet size={20} />
+                  <h3 className="font-bold tracking-wider text-xs uppercase">Fran (55%)</h3>
+                </div>
+                <div className="space-y-2">
+                  <div className={`flex justify-between text-xs ${darkMode ? 'text-slate-400' : 'text-emerald-800'}`}>
+                    <span>Ganancia base:</span>
+                    <span className="font-semibold">{formatCurrency(financialData.stats.totalFranBase)}</span>
+                  </div>
+                  {financialData.stats.totalFranReimbursed > 0 && (
+                    <div className={`flex justify-between text-xs ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                      <span>Reintegros de gastos:</span>
+                      <span className="font-semibold">+{formatCurrency(financialData.stats.totalFranReimbursed)}</span>
                     </div>
                   )}
-                  {week.tExpenseMe > 0 && (
-                    <div className={`flex justify-between px-1 font-medium ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-                      <span>Pagado c/ Tu Bolsillo (Fran):</span>
-                      <span>{formatCurrency(week.tExpenseMe)}</span>
+                  {financialData.stats.currentDebt > 0 && (
+                    <div className="flex justify-between text-xs text-rose-400 font-semibold pt-1">
+                      <span>Deuda a favor pendiente:</span>
+                      <span>+{formatCurrency(financialData.stats.currentDebt)}</span>
                     </div>
                   )}
-                </div>
-
-                <div className={`mb-4 space-y-1.5 border-t pt-3 text-xs ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                  {week.reimbursedThisWeekExp > 0 && (
-                     <div className="flex justify-between items-center bg-cyan-950/40 text-cyan-300 px-3 py-2 rounded-xl border border-cyan-500/20">
-                        <span>Reintegro a Fran (Gastos semana):</span>
-                        <span className="font-black">-{formatCurrency(week.reimbursedThisWeekExp)}</span>
-                     </div>
-                  )}
-                  {week.deficitBizGenerated > 0 && (
-                     <div className="flex justify-between items-center bg-rose-950/40 text-rose-300 px-3 py-2 rounded-xl border border-rose-500/20">
-                        <span>Déficit de caja cubierto por Fran:</span>
-                        <span className="font-black">+{formatCurrency(week.deficitBizGenerated)}</span>
-                     </div>
-                  )}
-                  {week.debtGeneratedThisWeekExp > 0 && (
-                     <div className="flex justify-between items-center bg-orange-950/40 text-orange-300 px-3 py-2 rounded-xl border border-orange-500/20">
-                        <span>Gastos de Fran pasados a deuda:</span>
-                        <span className="font-black">+{formatCurrency(week.debtGeneratedThisWeekExp)}</span>
-                     </div>
-                  )}
-                  {week.reimbursedHistorical > 0 && (
-                     <div className="flex justify-between items-center bg-cyan-950/40 text-cyan-300 px-3 py-2 rounded-xl border border-cyan-500/20">
-                        <span>Reintegro de deuda histórica (Fran):</span>
-                        <span className="font-black">-{formatCurrency(week.reimbursedHistorical)}</span>
-                     </div>
-                  )}
-                  {week.tAdvances > 0 && (
-                     <div className="flex justify-between items-center bg-purple-950/40 text-purple-300 px-3 py-2 rounded-xl border border-purple-500/20">
-                        <span>Adelantos / Créditos a Simón:</span>
-                        <span className="font-black">{formatCurrency(week.tAdvances)}</span>
-                     </div>
-                  )}
-                  <div className={`flex justify-between items-center px-3 py-2 rounded-xl border ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
-                      <span>Base para repartir (Ganancia Neta):</span>
-                      <span className="font-black">{formatCurrency(week.distributable)}</span>
+                  <div className={`border-t pt-2 mt-2 ${darkMode ? 'border-slate-800' : 'border-emerald-200'}`}>
+                    <p className="text-3xl font-black text-emerald-500">{formatCurrency(financialData.stats.totalFranBase + financialData.stats.totalFranReimbursed)}</p>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className={`p-4 rounded-xl border relative overflow-hidden ${darkMode ? 'bg-blue-950/20 border-blue-500/30' : 'bg-blue-50/50 border-blue-200'}`}>
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
-                    <p className="text-[10px] text-blue-400 font-bold mb-2 uppercase tracking-wider">Liquidación Simón</p>
+            <h2 className={`text-lg font-bold mt-10 mb-4 border-b pb-2 ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>Evolución Histórica Semanal</h2>
+            <div className="space-y-4">
+              {financialData.weeklyEvolution.length === 0 ? (
+                <p className={`text-center py-6 text-sm rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>No hay datos suficientes para mostrar la evolución.</p>
+              ) : (
+                financialData.weeklyEvolution.map((week) => (
+                  <div key={week.id} className={`rounded-2xl p-5 shadow-xl border transition hover:scale-[1.01] ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
+                    <h3 className={`font-bold mb-3 border-b pb-2 text-sm ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>{week.label}</h3>
                     
-                    <div className="space-y-1 text-xs mb-3">
-                      <div className="flex justify-between items-center text-blue-300">
-                        <span>Ganancia neta (45%):</span>
-                        <span className="font-semibold">{formatCurrency(week.simonGross)}</span>
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Ingresos</p>
+                        <p className="font-black text-cyan-400 text-lg">{formatCurrency(week.tIncome)}</p>
                       </div>
-                      {week.tAdvances > 0 && (
-                        <div className="flex justify-between items-center text-rose-400">
-                          <span>Menos adelanto / crédito:</span>
-                          <span className="font-semibold">-{formatCurrency(week.tAdvances)}</span>
+                      <div>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Gastos Totales</p>
+                        <p className="font-black text-rose-500 text-lg">{formatCurrency(week.tExpense)}</p>
+                      </div>
+                    </div>
+
+                    <div className={`mb-4 space-y-1.5 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {week.tExpenseBiz > 0 && (
+                        <div className="flex justify-between px-1">
+                          <span>Pagado c/ Fondo del Negocio:</span>
+                          <span className="font-medium">{formatCurrency(week.tExpenseBiz)}</span>
+                        </div>
+                      )}
+                      {week.tExpenseMe > 0 && (
+                        <div className={`flex justify-between px-1 font-medium ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                          <span>Pagado c/ Tu Bolsillo (Fran):</span>
+                          <span>{formatCurrency(week.tExpenseMe)}</span>
                         </div>
                       )}
                     </div>
-                    
-                    <div className={`border-t pt-2 flex justify-between items-center ${darkMode ? 'border-blue-500/20' : 'border-blue-200'}`}>
-                      <span className="text-[10px] font-black uppercase text-blue-400">Total en mano:</span>
-                      <span className="font-black text-blue-400 text-lg">
-                        {formatCurrency(week.simon)}
-                      </span>
+
+                    <div className={`mb-4 space-y-1.5 border-t pt-3 text-xs ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+                      {week.reimbursedThisWeekExp > 0 && (
+                         <div className="flex justify-between items-center bg-cyan-950/40 text-cyan-300 px-3 py-2 rounded-xl border border-cyan-500/20">
+                            <span>Reintegro a Fran (Gastos semana):</span>
+                            <span className="font-black">-{formatCurrency(week.reimbursedThisWeekExp)}</span>
+                         </div>
+                      )}
+                      {week.deficitBizGenerated > 0 && (
+                         <div className="flex justify-between items-center bg-rose-950/40 text-rose-300 px-3 py-2 rounded-xl border border-rose-500/20">
+                            <span>Déficit de caja cubierto por Fran:</span>
+                            <span className="font-black">+{formatCurrency(week.deficitBizGenerated)}</span>
+                         </div>
+                      )}
+                      {week.debtGeneratedThisWeekExp > 0 && (
+                         <div className="flex justify-between items-center bg-orange-950/40 text-orange-300 px-3 py-2 rounded-xl border border-orange-500/20">
+                            <span>Gastos de Fran pasados a deuda:</span>
+                            <span className="font-black">+{formatCurrency(week.debtGeneratedThisWeekExp)}</span>
+                         </div>
+                      )}
+                      {week.reimbursedHistorical > 0 && (
+                         <div className="flex justify-between items-center bg-cyan-950/40 text-cyan-300 px-3 py-2 rounded-xl border border-cyan-500/20">
+                            <span>Reintegro de deuda histórica (Fran):</span>
+                            <span className="font-black">-{formatCurrency(week.reimbursedHistorical)}</span>
+                         </div>
+                      )}
+                      {week.tAdvances > 0 && (
+                         <div className="flex justify-between items-center bg-purple-950/40 text-purple-300 px-3 py-2 rounded-xl border border-purple-500/20">
+                            <span>Adelantos / Créditos a Simón:</span>
+                            <span className="font-black">{formatCurrency(week.tAdvances)}</span>
+                         </div>
+                      )}
+                      <div className={`flex justify-between items-center px-3 py-2 rounded-xl border ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
+                          <span>Base para repartir (Ganancia Neta):</span>
+                          <span className="font-black">{formatCurrency(week.distributable)}</span>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className={`p-4 rounded-xl border relative overflow-hidden ${darkMode ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-emerald-50/50 border-emerald-200'}`}>
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
-                    <p className="text-[10px] text-emerald-400 font-bold mb-2 uppercase tracking-wider">Liquidación Fran</p>
-                    
-                    <div className="space-y-1 text-xs mb-3">
-                      <div className="flex justify-between items-center text-emerald-300">
-                        <span>Ganancia neta (55%):</span>
-                        <span className="font-semibold">{formatCurrency(week.franBase)}</span>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className={`p-4 rounded-xl border relative overflow-hidden ${darkMode ? 'bg-blue-950/20 border-blue-500/30' : 'bg-blue-50/50 border-blue-200'}`}>
+                        <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
+                        <p className="text-[10px] text-blue-400 font-bold mb-2 uppercase tracking-wider">Liquidación Simón</p>
+                        
+                        <div className="space-y-1 text-xs mb-3">
+                          <div className="flex justify-between items-center text-blue-300">
+                            <span>Ganancia neta (45%):</span>
+                            <span className="font-semibold">{formatCurrency(week.simonGross)}</span>
+                          </div>
+                          {week.tAdvances > 0 && (
+                            <div className="flex justify-between items-center text-rose-400">
+                              <span>Menos adelanto / crédito:</span>
+                              <span className="font-semibold">-{formatCurrency(week.tAdvances)}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className={`border-t pt-2 flex justify-between items-center ${darkMode ? 'border-blue-500/20' : 'border-blue-200'}`}>
+                          <span className="text-[10px] font-black uppercase text-blue-400">Total en mano:</span>
+                          <span className="font-black text-blue-400 text-lg">
+                            {formatCurrency(week.simon)}
+                          </span>
+                        </div>
                       </div>
                       
-                      {(week.reimbursedThisWeekExp > 0 || week.reimbursedHistorical > 0) && (
-                        <div className="flex justify-between items-center text-emerald-400">
-                          <span>Reintegro de gastos:</span>
-                          <span className="font-semibold">+{formatCurrency(week.reimbursedThisWeekExp + week.reimbursedHistorical)}</span>
+                      <div className={`p-4 rounded-xl border relative overflow-hidden ${darkMode ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-emerald-50/50 border-emerald-200'}`}>
+                        <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+                        <p className="text-[10px] text-emerald-400 font-bold mb-2 uppercase tracking-wider">Liquidación Fran</p>
+                        
+                        <div className="space-y-1 text-xs mb-3">
+                          <div className="flex justify-between items-center text-emerald-300">
+                            <span>Ganancia neta (55%):</span>
+                            <span className="font-semibold">{formatCurrency(week.franBase)}</span>
+                          </div>
+                          
+                          {(week.reimbursedThisWeekExp > 0 || week.reimbursedHistorical > 0) && (
+                            <div className="flex justify-between items-center text-emerald-400">
+                              <span>Reintegro de gastos:</span>
+                              <span className="font-semibold">+{formatCurrency(week.reimbursedThisWeekExp + week.reimbursedHistorical)}</span>
+                            </div>
+                          )}
+
+                          {week.tAdvances > 0 && (
+                            <div className="flex justify-between items-center text-purple-400">
+                              <span>Adelanto descontado a Simón:</span>
+                              <span className="font-semibold">+{formatCurrency(week.tAdvances)}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-
-                      {week.tAdvances > 0 && (
-                        <div className="flex justify-between items-center text-purple-400">
-                          <span>Adelanto descontado a Simón:</span>
-                          <span className="font-semibold">+{formatCurrency(week.tAdvances)}</span>
+                        
+                        <div className={`border-t pt-2 flex justify-between items-center ${darkMode ? 'border-emerald-500/20' : 'border-emerald-200'}`}>
+                          <span className="text-[10px] font-black uppercase text-emerald-400">Total en mano:</span>
+                          <span className="font-black text-emerald-400 text-lg">
+                            {formatCurrency(week.franFinal)}
+                          </span>
                         </div>
-                      )}
+                      </div>
                     </div>
-                    
-                    <div className={`border-t pt-2 flex justify-between items-center ${darkMode ? 'border-emerald-500/20' : 'border-emerald-200'}`}>
-                      <span className="text-[10px] font-black uppercase text-emerald-400">Total en mano:</span>
-                      <span className="font-black text-emerald-400 text-lg">
-                        {formatCurrency(week.franFinal)}
-                      </span>
+
+                    <div className="border-t border-dashed pt-3 flex justify-end">
+                      <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl border shadow-sm ${week.currentDebt > 0 ? (darkMode ? 'text-rose-400 bg-rose-950/30 border-rose-500/30' : 'text-rose-700 bg-rose-50 border-rose-200') : (darkMode ? 'text-emerald-400 bg-emerald-950/30 border-emerald-500/30' : 'text-emerald-700 bg-emerald-50 border-emerald-200')}`}>
+                        <span className="font-medium">Deuda Histórica Acumulada (a favor Fran):</span>
+                        <span className="font-black">{formatCurrency(week.currentDebt)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="border-t border-dashed pt-3 flex justify-end">
-                  <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl border shadow-sm ${week.currentDebt > 0 ? (darkMode ? 'text-rose-400 bg-rose-950/30 border-rose-500/30' : 'text-rose-700 bg-rose-50 border-rose-200') : (darkMode ? 'text-emerald-400 bg-emerald-950/30 border-emerald-500/30' : 'text-emerald-700 bg-emerald-50 border-emerald-200')}`}>
-                    <span className="font-medium">Deuda Histórica Acumulada (a favor Fran):</span>
-                    <span className="font-black">{formatCurrency(week.currentDebt)}</span>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const Incomes = () => {
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [source, setSource] = useState('Mercado Libre');
-    const [amount, setAmount] = useState('');
-    const [desc, setDesc] = useState('');
-
-    useEffect(() => {
-      if (source === 'Mercado Libre' && date) {
-        const d = new Date(date + 'T12:00:00');
-        const day = d.getDay();
-        if (day === 0 || day === 6) {
-          setAmount('130000');
-        } else {
-          setAmount('112000');
-        }
-      } else {
-        setAmount('');
-      }
-    }, [date, source]);
-
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      if (!amount || !date) return;
-      
-      const newIncome = {
-        id: Date.now().toString(),
-        date,
-        source,
-        amount: Number(amount),
-        desc
+                ))
+              )}
+            </div>
+          </div>
+        );
       };
-      
-      setIncomes([...incomes, newIncome].sort((a, b) => new Date(b.date) - new Date(a.date)));
-      setAmount('');
-      setDesc('');
-    };
 
-    const deleteIncome = (id) => setIncomes(incomes.filter(i => i.id !== id));
+      const Incomes = () => {
+        const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+        const [source, setSource] = useState('Mercado Libre');
+        const [amount, setAmount] = useState('');
+        const [desc, setDesc] = useState('');
 
-    return (
-      <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-        <form onSubmit={handleSubmit} className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><PlusCircle size={18} className="text-cyan-500"/> Cargar Ingreso</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
-            <div>
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Fecha</label>
-              <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
-            </div>
-            <div>
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Empresa</label>
-              <select value={source} onChange={e => setSource(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`}>
-                <option value="Mercado Libre">Mercado Libre</option>
-                <option value="Sur distribución">Sur distribución</option>
-                <option value="Uber">Uber</option>
-              </select>
-            </div>
-            <div>
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Monto ($)</label>
-              <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
-            </div>
-            <div>
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Descripción (Opcional)</label>
-              <input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="Ej. Día normal..." className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
-            </div>
-          </div>
-          <button type="submit" className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-cyan-500/20">
-            Guardar Ingreso
-          </button>
-        </form>
+        useEffect(() => {
+          if (source === 'Mercado Libre' && date) {
+            const d = new Date(date + 'T12:00:00');
+            const day = d.getDay();
+            if (day === 0 || day === 6) {
+              setAmount('130000');
+            } else {
+              setAmount('112000');
+            }
+          } else {
+            setAmount('');
+          }
+        }, [date, source]);
 
-        <div className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><Receipt size={18} className="text-cyan-500"/> Historial de Ingresos</h3>
-          <div className="space-y-3">
-            {incomes.map((inc) => (
-              <div key={inc.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl transition gap-3 ${darkMode ? 'bg-slate-950/50 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl text-white ${
-                    inc.source === 'Mercado Libre' ? 'bg-[#FFE600] text-slate-900 font-black' :
-                    inc.source === 'Uber' ? 'bg-cyan-500 text-slate-950' : 'bg-blue-600'
-                  }`}>
-                    {inc.source === 'Mercado Libre' ? <Calendar size={18} /> : <Truck size={18} />}
-                  </div>
-                  <div>
-                    <p className={`font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{inc.source}</p>
-                    <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{new Date(inc.date + 'T12:00:00').toLocaleDateString('es-AR')} {inc.desc && `- ${inc.desc}`}</p>
-                    {inc.source === 'Mercado Libre' && (
-                      <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] rounded-lg font-semibold border ${darkMode ? 'bg-cyan-950/50 text-cyan-400 border-cyan-500/30' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
-                        {getBillingCycle(inc.date)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
-                  <span className={`font-black text-lg ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(inc.amount)}</span>
-                  <button onClick={() => deleteIncome(inc.id)} className={`p-2 rounded-xl transition ${darkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-950/30' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-            {incomes.length === 0 && <p className={`text-center py-6 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>No hay ingresos cargados.</p>}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const Expenses = () => {
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [category, setCategory] = useState('Combustible');
-    const [amount, setAmount] = useState('');
-    const [paidBy, setPaidBy] = useState('business');
-    
-    const categories = [
-      'Cochera', 'Rentas', 'Municipalidad', 'Seguro', 'Monotributo', 
-      'Combustible', 'Inflado', 'Parchado', 'Lámparas', 'Peaje', 'Lavadero', 'Datos celular', 'Otro'
-    ];
-
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      if (!amount || !date) return;
-      
-      const newExpense = {
-        id: Date.now().toString(),
-        date,
-        category,
-        amount: Number(amount),
-        paidBy
-      };
-      
-      setExpenses([...expenses, newExpense].sort((a, b) => new Date(b.date) - new Date(a.date)));
-      setAmount('');
-    };
-
-    const deleteExpense = (id) => setExpenses(expenses.filter(e => e.id !== id));
-
-    return (
-      <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-        <form onSubmit={handleSubmit} className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><PlusCircle size={18} className="text-rose-500"/> Cargar Gasto</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
-            <div>
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Fecha</label>
-              <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
-            </div>
-            <div>
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Categoría</label>
-              <select value={category} onChange={e => setCategory(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`}>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Monto ($)</label>
-              <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
-            </div>
-            <div>
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>¿Quién lo pagó?</label>
-              <select value={paidBy} onChange={e => setPaidBy(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`}>
-                <option value="business">Fondo del Negocio (Caja)</option>
-                <option value="me">Pagado por Fran</option>
-              </select>
-            </div>
-          </div>
-          <button type="submit" className="w-full bg-gradient-to-r from-rose-500 to-orange-600 hover:from-rose-400 hover:to-orange-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-rose-500/20">
-            Guardar Gasto
-          </button>
-        </form>
-
-        <div className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><CreditCard size={18} className="text-rose-500"/> Historial de Gastos</h3>
-          <div className="space-y-3">
-            {expenses.map((exp) => (
-              <div key={exp.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl transition gap-3 ${darkMode ? 'bg-slate-950/50 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20">
-                    <DollarSign size={18} />
-                  </div>
-                  <div>
-                    <p className={`font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{exp.category}</p>
-                    <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{new Date(exp.date + 'T12:00:00').toLocaleDateString('es-AR')}</p>
-                    <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] rounded-lg font-semibold border ${exp.paidBy === 'me' ? (darkMode ? 'bg-orange-950/40 text-orange-400 border-orange-500/30' : 'bg-orange-50 text-orange-700 border-orange-200') : (darkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-600 border-slate-200')}`}>
-                      {exp.paidBy === 'me' ? 'Pagado por Fran' : 'Pagado con Fondo'}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
-                  <span className="font-black text-lg text-rose-500">-{formatCurrency(exp.amount)}</span>
-                  <button onClick={() => deleteExpense(exp.id)} className={`p-2 rounded-xl transition ${darkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-950/30' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-            {expenses.length === 0 && <p className={`text-center py-6 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>No hay gastos cargados.</p>}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const Advances = () => {
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [amount, setAmount] = useState('');
-    const [desc, setDesc] = useState('');
-
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      if (!amount || !date) return;
-      
-      const newAdv = {
-        id: Date.now().toString(),
-        date,
-        amount: Number(amount),
-        desc
-      };
-      
-      setAdvances([...advances, newAdv].sort((a, b) => new Date(b.date) - new Date(a.date)));
-      setAmount('');
-      setDesc('');
-    };
-
-    const deleteAdvance = (id) => setAdvances(advances.filter(a => a.id !== id));
-
-    return (
-      <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-        <form onSubmit={handleSubmit} className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><Send size={18} className="text-purple-500"/> Cargar Adelanto / Crédito a Simón</h3>
-          <p className={`text-xs mb-4 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            Registra dinero prestado o entregado a tu hermano fuera de los gastos operativos (ej. dinero para comida). Se descontará de su liquidación semanal y se sumará a la tuya.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
-            <div>
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Fecha</label>
-              <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-purple-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
-            </div>
-            <div>
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Monto ($)</label>
-              <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-purple-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
-            </div>
-            <div className="md:col-span-2">
-              <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Descripción / Motivo</label>
-              <input type="text" required value={desc} onChange={e => setDesc(e.target.value)} placeholder="Ej. Adelanto para comida..." className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-purple-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
-            </div>
-          </div>
-          <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-purple-500/20">
-            Registrar Adelanto
-          </button>
-        </form>
-
-        <div className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><Receipt size={18} className="text-purple-500"/> Historial de Adelantos</h3>
-          <div className="space-y-3">
-            {advances.map((adv) => (
-              <div key={adv.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl transition gap-3 ${darkMode ? 'bg-slate-950/50 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
-                    <Send size={18} />
-                  </div>
-                  <div>
-                    <p className={`font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{adv.desc}</p>
-                    <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{new Date(adv.date + 'T12:00:00').toLocaleDateString('es-AR')}</p>
-                    <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] rounded-lg font-semibold border ${darkMode ? 'bg-purple-950/40 text-purple-300 border-purple-500/30' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
-                      Descontado a Simón / Sumado a Fran
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
-                  <span className="font-black text-lg text-purple-400">{formatCurrency(adv.amount)}</span>
-                  <button onClick={() => deleteAdvance(adv.id)} className={`p-2 rounded-xl transition ${darkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-950/30' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-            {advances.length === 0 && <p className={`text-center py-6 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>No hay adelantos cargados.</p>}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className={`min-h-screen font-sans pb-28 md:pb-12 transition-colors duration-300 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
-      <header className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-colors ${darkMode ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
-        <div className="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-md font-black text-lg ${darkMode ? 'bg-slate-900 border-slate-800 text-cyan-400' : 'bg-slate-900 border-slate-800 text-cyan-400'}`}>
-              HL
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-base font-black tracking-wider">HERMANOS LOGÍSTICA</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-widest ${darkMode ? 'bg-cyan-950 text-cyan-400 border border-cyan-800/50' : 'bg-blue-50 text-blue-600 border border-blue-200'}`}>PRO</span>
-              </div>
-              <p className={`text-[10px] font-medium tracking-wide ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Mercado Libre • Sur • Uber</p>
-            </div>
-          </div>
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          if (!amount || !date) return;
           
-          <button 
-            onClick={() => setDarkMode(!darkMode)}
-            className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'bg-slate-900 border-slate-800 text-yellow-400 hover:bg-slate-800' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}
-            title="Cambiar tema"
-          >
-            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-        </div>
-      </header>
+          const newIncome = {
+            id: Date.now().toString(),
+            date,
+            source,
+            amount: Number(amount),
+            desc
+          };
+          
+          setIncomes([...incomes, newIncome].sort((a, b) => new Date(b.date) - new Date(a.date)));
+          setAmount('');
+          setDesc('');
+        };
 
-      <main className="max-w-5xl mx-auto px-4 py-6">
-        {activeTab === 'dashboard' && <Dashboard />}
-        {activeTab === 'incomes' && <Incomes />}
-        {activeTab === 'expenses' && <Expenses />}
-        {activeTab === 'advances' && <Advances />}
-      </main>
+        const deleteIncome = (id) => setIncomes(incomes.filter(i => i.id !== id));
 
-      <nav className={`fixed bottom-0 left-0 w-full border-t md:relative md:border-none md:bg-transparent md:w-auto md:pb-6 z-50 backdrop-blur-xl transition-colors ${darkMode ? 'bg-slate-950/90 border-slate-800' : 'bg-white/90 border-slate-200'}`}>
-        <div className="max-w-md mx-auto flex justify-around px-2 py-2 md:bg-slate-900/80 md:border md:border-slate-800 md:rounded-2xl md:shadow-2xl md:px-6 md:py-2">
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'dashboard' ? (darkMode ? 'text-cyan-400 bg-cyan-950/40' : 'text-blue-600 bg-blue-50') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600')}`}
-          >
-            <PieChart size={18} className="mb-0.5" />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Resumen</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('incomes')}
-            className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'incomes' ? (darkMode ? 'text-cyan-400 bg-cyan-950/40' : 'text-blue-600 bg-blue-50') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600')}`}
-          >
-            <TrendingUp size={18} className="mb-0.5" />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Ingresos</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('expenses')}
-            className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'expenses' ? (darkMode ? 'text-cyan-400 bg-cyan-950/40' : 'text-blue-600 bg-blue-50') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600')}`}
-          >
-            <TrendingDown size={18} className="mb-0.5" />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Gastos</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('advances')}
-            className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'advances' ? (darkMode ? 'text-cyan-400 bg-cyan-950/40' : 'text-blue-600 bg-blue-50') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600')}`}
-          >
-            <Send size={18} className="mb-0.5" />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Adelantos</span>
-          </button>
+        return (
+          <div className="space-y-6">
+            <form onSubmit={handleSubmit} className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><PlusCircle size={18} className="text-cyan-500"/> Cargar Ingreso</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
+                <div>
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Fecha</label>
+                  <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                </div>
+                <div>
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Empresa</label>
+                  <select value={source} onChange={e => setSource(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`}>
+                    <option value="Mercado Libre">Mercado Libre</option>
+                    <option value="Sur distribución">Sur distribución</option>
+                    <option value="Uber">Uber</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Monto ($)</label>
+                  <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                </div>
+                <div>
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Descripción (Opcional)</label>
+                  <input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="Ej. Día normal..." className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                </div>
+              </div>
+              <button type="submit" className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-cyan-500/20">
+                Guardar Ingreso
+              </button>
+            </form>
+
+            <div className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><Receipt size={18} className="text-cyan-500"/> Historial de Ingresos</h3>
+              <div className="space-y-3">
+                {incomes.map((inc) => (
+                  <div key={inc.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl transition gap-3 ${darkMode ? 'bg-slate-950/50 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 rounded-xl text-white ${
+                        inc.source === 'Mercado Libre' ? 'bg-[#FFE600] text-slate-900 font-black' :
+                        inc.source === 'Uber' ? 'bg-cyan-500 text-slate-950' : 'bg-blue-600'
+                      }`}>
+                        {inc.source === 'Mercado Libre' ? <Calendar size={18} /> : <Truck size={18} />}
+                      </div>
+                      <div>
+                        <p className={`font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{inc.source}</p>
+                        <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{new Date(inc.date + 'T12:00:00').toLocaleDateString('es-AR')} {inc.desc && `- ${inc.desc}`}</p>
+                        {inc.source === 'Mercado Libre' && (
+                          <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] rounded-lg font-semibold border ${darkMode ? 'bg-cyan-950/50 text-cyan-400 border-cyan-500/30' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                            {getBillingCycle(inc.date)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
+                      <span className={`font-black text-lg ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(inc.amount)}</span>
+                      <button onClick={() => deleteIncome(inc.id)} className={`p-2 rounded-xl transition ${darkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-950/30' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {incomes.length === 0 && <p className={`text-center py-6 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>No hay ingresos cargados.</p>}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const Expenses = () => {
+        const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+        const [category, setCategory] = useState('Combustible');
+        const [amount, setAmount] = useState('');
+        const [paidBy, setPaidBy] = useState('business');
+        
+        const categories = [
+          'Cochera', 'Rentas', 'Municipalidad', 'Seguro', 'Monotributo', 
+          'Combustible', 'Inflado', 'Parchado', 'Lámparas', 'Peaje', 'Lavadero', 'Datos celular', 'Otro'
+        ];
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          if (!amount || !date) return;
+          
+          const newExpense = {
+            id: Date.now().toString(),
+            date,
+            category,
+            amount: Number(amount),
+            paidBy
+          };
+          
+          setExpenses([...expenses, newExpense].sort((a, b) => new Date(b.date) - new Date(a.date)));
+          setAmount('');
+        };
+
+        const deleteExpense = (id) => setExpenses(expenses.filter(e => e.id !== id));
+
+        return (
+          <div className="space-y-6">
+            <form onSubmit={handleSubmit} className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><PlusCircle size={18} className="text-rose-500"/> Cargar Gasto</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
+                <div>
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Fecha</label>
+                  <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                </div>
+                <div>
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Categoría</label>
+                  <select value={category} onChange={e => setCategory(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`}>
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Monto ($)</label>
+                  <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                </div>
+                <div>
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>¿Quién lo pagó?</label>
+                  <select value={paidBy} onChange={e => setPaidBy(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`}>
+                    <option value="business">Fondo del Negocio (Caja)</option>
+                    <option value="me">Pagado por Fran</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" className="w-full bg-gradient-to-r from-rose-500 to-orange-600 hover:from-rose-400 hover:to-orange-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-rose-500/20">
+                Guardar Gasto
+              </button>
+            </form>
+
+            <div className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><CreditCard size={18} className="text-rose-500"/> Historial de Gastos</h3>
+              <div className="space-y-3">
+                {expenses.map((exp) => (
+                  <div key={exp.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl transition gap-3 ${darkMode ? 'bg-slate-950/50 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20">
+                        <DollarSign size={18} />
+                      </div>
+                      <div>
+                        <p className={`font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{exp.category}</p>
+                        <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{new Date(exp.date + 'T12:00:00').toLocaleDateString('es-AR')}</p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] rounded-lg font-semibold border ${exp.paidBy === 'me' ? (darkMode ? 'bg-orange-950/40 text-orange-400 border-orange-500/30' : 'bg-orange-50 text-orange-700 border-orange-200') : (darkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-600 border-slate-200')}`}>
+                          {exp.paidBy === 'me' ? 'Pagado por Fran' : 'Pagado con Fondo'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
+                      <span className="font-black text-lg text-rose-500">-{formatCurrency(exp.amount)}</span>
+                      <button onClick={() => deleteExpense(exp.id)} className={`p-2 rounded-xl transition ${darkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-950/30' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {expenses.length === 0 && <p className={`text-center py-6 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>No hay gastos cargados.</p>}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const Advances = () => {
+        const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+        const [amount, setAmount] = useState('');
+        const [desc, setDesc] = useState('');
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          if (!amount || !date) return;
+          
+          const newAdv = {
+            id: Date.now().toString(),
+            date,
+            amount: Number(amount),
+            desc
+          };
+          
+          setAdvances([...advances, newAdv].sort((a, b) => new Date(b.date) - new Date(a.date)));
+          setAmount('');
+          setDesc('');
+        };
+
+        const deleteAdvance = (id) => setAdvances(advances.filter(a => a.id !== id));
+
+        return (
+          <div className="space-y-6">
+            <form onSubmit={handleSubmit} className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><Send size={18} className="text-purple-500"/> Cargar Adelanto / Crédito a Simón</h3>
+              <p className={`text-xs mb-4 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                Registra dinero prestado o entregado a tu hermano fuera de los gastos operativos (ej. dinero para comida). Se descontará de su liquidación semanal y se sumará a la tuya.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
+                <div>
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Fecha</label>
+                  <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-purple-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                </div>
+                <div>
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Monto ($)</label>
+                  <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-purple-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Descripción / Motivo</label>
+                  <input type="text" required value={desc} onChange={e => setDesc(e.target.value)} placeholder="Ej. Adelanto para comida..." className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-purple-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                </div>
+              </div>
+              <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-purple-500/20">
+                Registrar Adelanto
+              </button>
+            </form>
+
+            <div className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><Receipt size={18} className="text-purple-500"/> Historial de Adelantos</h3>
+              <div className="space-y-3">
+                {advances.map((adv) => (
+                  <div key={adv.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl transition gap-3 ${darkMode ? 'bg-slate-950/50 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
+                        <Send size={18} />
+                      </div>
+                      <div>
+                        <p className={`font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{adv.desc}</p>
+                        <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{new Date(adv.date + 'T12:00:00').toLocaleDateString('es-AR')}</p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] rounded-lg font-semibold border ${darkMode ? 'bg-purple-950/40 text-purple-300 border-purple-500/30' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
+                          Descontado a Simón / Sumado a Fran
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
+                      <span className="font-black text-lg text-purple-400">{formatCurrency(adv.amount)}</span>
+                      <button onClick={() => deleteAdvance(adv.id)} className={`p-2 rounded-xl transition ${darkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-950/30' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {advances.length === 0 && <p className={`text-center py-6 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>No hay adelantos cargados.</p>}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <div className={`min-h-screen font-sans pb-28 md:pb-12 transition-colors duration-300 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+          <header className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-colors ${darkMode ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
+            <div className="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-md font-black text-lg ${darkMode ? 'bg-slate-900 border-slate-800 text-cyan-400' : 'bg-slate-900 border-slate-800 text-cyan-400'}`}>
+                  HL
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base font-black tracking-wider">HERMANOS LOGÍSTICA</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-widest ${darkMode ? 'bg-cyan-950 text-cyan-400 border border-cyan-800/50' : 'bg-blue-50 text-blue-600 border border-blue-200'}`}>PRO</span>
+                  </div>
+                  <p className={`text-[10px] font-medium tracking-wide ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Mercado Libre • Sur • Uber</p>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'bg-slate-900 border-slate-800 text-yellow-400 hover:bg-slate-800' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}
+                title="Cambiar tema"
+              >
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            </div>
+          </header>
+
+          <main className="max-w-5xl mx-auto px-4 py-6">
+            {activeTab === 'dashboard' && <Dashboard />}
+            {activeTab === 'incomes' && <Incomes />}
+            {activeTab === 'expenses' && <Expenses />}
+            {activeTab === 'advances' && <Advances />}
+          </main>
+
+          <nav className={`fixed bottom-0 left-0 w-full border-t md:relative md:border-none md:bg-transparent md:w-auto md:pb-6 z-50 backdrop-blur-xl transition-colors ${darkMode ? 'bg-slate-950/90 border-slate-800' : 'bg-white/90 border-slate-200'}`}>
+            <div className="max-w-md mx-auto flex justify-around px-2 py-2 md:bg-slate-900/80 md:border md:border-slate-800 md:rounded-2xl md:shadow-2xl md:px-6 md:py-2">
+              <button 
+                onClick={() => setActiveTab('dashboard')}
+                className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'dashboard' ? (darkMode ? 'text-cyan-400 bg-cyan-950/40' : 'text-blue-600 bg-blue-50') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600')}`}
+              >
+                <PieChart size={18} className="mb-0.5" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">Resumen</span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('incomes')}
+                className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'incomes' ? (darkMode ? 'text-cyan-400 bg-cyan-950/40' : 'text-blue-600 bg-blue-50') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600')}`}
+              >
+                <TrendingUp size={18} className="mb-0.5" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">Ingresos</span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('expenses')}
+                className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'expenses' ? (darkMode ? 'text-cyan-400 bg-cyan-950/40' : 'text-blue-600 bg-blue-50') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600')}`}
+              >
+                <TrendingDown size={18} className="mb-0.5" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">Gastos</span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('advances')}
+                className={`flex flex-col items-center p-2 rounded-xl transition ${activeTab === 'advances' ? (darkMode ? 'text-cyan-400 bg-cyan-950/40' : 'text-blue-600 bg-blue-50') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600')}`}
+              >
+                <Send size={18} className="mb-0.5" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">Adelantos</span>
+              </button>
+            </div>
+          </nav>
         </div>
-      </nav>
-    </div>
-  );
-}
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
