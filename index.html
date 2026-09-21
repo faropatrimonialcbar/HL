@@ -110,12 +110,17 @@
     };
 
     const getMondayOfWeek = (dateStr) => {
+      if (!dateStr) return null;
       const d = new Date(dateStr + 'T12:00:00');
       const day = d.getDay();
       const diffToMonday = day === 0 ? -6 : 1 - day;
       const monday = new Date(d);
       monday.setDate(d.getDate() + diffToMonday);
-      return monday.toISOString().split('T')[0];
+      
+      const y = monday.getFullYear();
+      const m = String(monday.getMonth() + 1).padStart(2, '0');
+      const da = String(monday.getDate()).padStart(2, '0');
+      return `${y}-${m}-${da}`;
     };
 
     const initialIncomes = [
@@ -210,7 +215,7 @@
           inc.date <= l.endDate
         );
         if (matchedLiq) {
-          return matchedLiq.targetWeekStart;
+          return getMondayOfWeek(matchedLiq.targetWeekStart);
         }
         // Si es Mercado Libre o Sur distribución y NO hay liquidación creada, no retorna semana asignada
         if (inc.source === 'Mercado Libre' || inc.source === 'Sur distribución') {
@@ -237,8 +242,9 @@
         const allDates = [
           ...incomes.map(i => i.date), 
           ...expenses.map(e => e.date),
-          ...advances.map(a => a.date)
-        ];
+          ...advances.map(a => a.date),
+          ...liquidations.map(l => l.targetWeekStart)
+        ].filter(Boolean);
 
         let weeks = [];
         let currentDebt = 0;
@@ -253,18 +259,29 @@
           const diffToMonday = day === 0 ? -6 : 1 - day;
           let currentWeekStart = new Date(minDate);
           currentWeekStart.setDate(minDate.getDate() + diffToMonday);
-          currentWeekStart.setHours(0,0,0,0);
+          currentWeekStart.setHours(12, 0, 0, 0);
 
-          const today = new Date();
-          today.setHours(23,59,59,999);
+          let maxTargetDate = new Date();
+          allDates.forEach(dStr => {
+            const d = new Date(dStr + 'T12:00:00');
+            if (d > maxTargetDate) maxTargetDate = d;
+          });
+          maxTargetDate.setHours(23, 59, 59, 999);
 
-          while (currentWeekStart <= today) {
+          const formatD = (dateObj) => {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const da = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${da}`;
+          };
+
+          while (currentWeekStart <= maxTargetDate) {
             const weekEnd = new Date(currentWeekStart);
             weekEnd.setDate(currentWeekStart.getDate() + 6);
-            weekEnd.setHours(23,59,59,999);
+            weekEnd.setHours(23, 59, 59, 999);
 
-            const startStr = currentWeekStart.toISOString().split('T')[0];
-            const endStr = weekEnd.toISOString().split('T')[0];
+            const startStr = formatD(currentWeekStart);
+            const endStr = formatD(weekEnd);
 
             const weekIncomes = incomes.filter(i => getIncomePayoutWeek(i) === startStr);
             const weekExpenses = expenses.filter(e => e.date >= startStr && e.date <= endStr);
@@ -991,7 +1008,7 @@
             title: liqTitle || `Liquidación ${liqSource} (${liqStartDate} al ${liqEndDate})`,
             startDate: liqStartDate,
             endDate: liqEndDate,
-            targetWeekStart: liqTargetWeek
+            targetWeekStart: getMondayOfWeek(liqTargetWeek)
           };
 
           setLiquidations([...liquidations, newLiq]);
@@ -1070,9 +1087,9 @@
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold mb-1">Semana de Cobro Efectivo (Lunes)</label>
+                      <label className="block text-xs font-semibold mb-1">Semana de Cobro Efectivo (Cualquier día de esa semana)</label>
                       <input type="date" required value={liqTargetWeek} onChange={e => setLiqTargetWeek(e.target.value)} className={`w-full p-2.5 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`} />
-                      <p className="text-[10px] text-slate-400 mt-1">Los ingresos en este rango se sumarán en la liquidación semanal de esta fecha.</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Los ingresos en este rango se sumarán automáticamente al período semanal correspondiente a esta fecha.</p>
                     </div>
 
                     <div className={`p-3 rounded-xl border text-xs ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
@@ -1104,7 +1121,7 @@
                       <div>
                         <p className="font-bold text-xs text-cyan-400">{l.title}</p>
                         <p className="text-[10px] text-slate-400">Rango: {l.startDate} al {l.endDate}</p>
-                        <p className="text-[10px] text-emerald-400">Cobro Semana: {l.targetWeekStart}</p>
+                        <p className="text-[10px] text-emerald-400">Cobro Semana del: {getMondayOfWeek(l.targetWeekStart)}</p>
                       </div>
                       <button onClick={() => deleteLiq(l.id)} className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400">
                         <Trash2 size={14} />
