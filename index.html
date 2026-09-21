@@ -27,6 +27,19 @@
   <script type="text/babel">
     const { useState, useMemo, useEffect, useRef } = React;
 
+    // --- CÓDIGO DE VALIDACIÓN SEGURIDAD ---
+    const VALIDATION_CODE = "05272502";
+
+    const requestValidation = () => {
+      const input = prompt("Ingrese el código de validación para autorizar esta acción:");
+      if (input === VALIDATION_CODE) {
+        return true;
+      } else if (input !== null) {
+        alert("Código de validación incorrecto.");
+      }
+      return false;
+    };
+
     // --- COMPONENTES DE ÍCONOS SVG ---
     const PieChart = ({ size = 20, className = "" }) => (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
@@ -94,27 +107,9 @@
     const BarChart = ({ size = 20, className = "" }) => (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
     );
-    const CheckCircle = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-    );
 
     const formatCurrency = (amount) => {
       return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
-    };
-
-    const getBillingCycle = (dateString) => {
-      const d = new Date(dateString + 'T12:00:00');
-      let month = d.getMonth() + 1;
-      let year = d.getFullYear();
-      
-      if (d.getDate() > 15) {
-        month += 1;
-        if (month > 12) {
-          month = 1;
-          year += 1;
-        }
-      }
-      return `Corte 15/${String(month).padStart(2, '0')}/${year}`;
     };
 
     const getMondayOfWeek = (dateStr) => {
@@ -206,13 +201,11 @@
         localStorage.setItem('logistica_liquidations_v1', JSON.stringify(liquidations));
       }, [liquidations]);
 
-      // Detectar si hoy es día 30 de mes
       const isDay30 = useMemo(() => {
         const today = new Date();
         return today.getDate() === 30 || today.getDate() === 31;
       }, []);
 
-      // Helper para mapear liquidación asignada a un ingreso
       const getIncomePayoutWeek = (inc) => {
         const matchedLiq = liquidations.find(l => 
           l.source === inc.source && 
@@ -269,7 +262,6 @@
             const startStr = currentWeekStart.toISOString().split('T')[0];
             const endStr = weekEnd.toISOString().split('T')[0];
 
-            // Filtrar ingresos cuya semana de cobranza/liquidación corresponda a esta semana
             const weekIncomes = incomes.filter(i => getIncomePayoutWeek(i) === startStr);
             const weekExpenses = expenses.filter(e => e.date >= startStr && e.date <= endStr);
             const weekAdvances = advances.filter(a => a.date >= startStr && a.date <= endStr);
@@ -359,13 +351,11 @@
         };
       }, [incomes, expenses, advances, liquidations]);
 
-      // --- MÓDULO DE INFORMES PDF Y GRÁFICOS ---
       const Reports = () => {
         const [selectedMonth, setSelectedMonth] = useState('2026-09');
         const [isGenerating, setIsGenerating] = useState(false);
         const reportRef = useRef();
 
-        // Filtrar datos por mes seleccionado
         const monthlyIncomes = useMemo(() => {
           return incomes.filter(i => i.date.startsWith(selectedMonth));
         }, [incomes, selectedMonth]);
@@ -378,7 +368,6 @@
         const totalMonthExpense = monthlyExpenses.reduce((a, b) => a + Number(b.amount), 0);
         const netMonthProfit = totalMonthIncome - totalMonthExpense;
 
-        // Desglose por empresa mensual
         const monthBySource = useMemo(() => {
           return monthlyIncomes.reduce((acc, curr) => {
             acc[curr.source] = (acc[curr.source] || 0) + Number(curr.amount);
@@ -386,7 +375,6 @@
           }, {});
         }, [monthlyIncomes]);
 
-        // Desglose por rubro/categoría mensual
         const monthByCategory = useMemo(() => {
           return monthlyExpenses.reduce((acc, curr) => {
             acc[curr.category] = (acc[curr.category] || 0) + Number(curr.amount);
@@ -450,10 +438,7 @@
               </div>
             </div>
 
-            {/* CONTENEDOR IMPRESO DEL REPORTE */}
             <div ref={reportRef} className={`p-6 sm:p-8 rounded-2xl shadow-2xl border space-y-8 ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
-              
-              {/* ENCABEZADO DEL INFORME */}
               <div className="border-b pb-6 flex justify-between items-start">
                 <div>
                   <div className="flex items-center gap-2">
@@ -469,7 +454,6 @@
                 </div>
               </div>
 
-              {/* TARJETAS KPI */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className={`p-4 rounded-xl border ${darkMode ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <p className="text-xs font-bold text-slate-400 uppercase">Total Ingresos Mensuales</p>
@@ -485,10 +469,7 @@
                 </div>
               </div>
 
-              {/* GRÁFICOS INTERACTIVOS SVG */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* GRÁFICO 1: Gastos por Rubro */}
                 <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
                     <BarChart className="text-rose-400" size={18} /> Gastos por Rubro Categorizado
@@ -515,7 +496,6 @@
                   </div>
                 </div>
 
-                {/* GRÁFICO 2: Ingresos por Empresa */}
                 <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
                     <TrendingUp className="text-cyan-400" size={18} /> Ingresos por Empresa / Operación
@@ -542,10 +522,8 @@
                     )}
                   </div>
                 </div>
-
               </div>
 
-              {/* GRÁFICO 3: REPARTO DE GANANCIAS */}
               <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
                   <PieChart className="text-emerald-400" size={18} /> División Mensual de Ganancias Neta
@@ -565,7 +543,6 @@
               <div className="border-t pt-4 text-center text-[10px] text-slate-500">
                 Documento de balance mensual autogenerado por Hermanos Logística PRO.
               </div>
-
             </div>
           </div>
         );
@@ -636,7 +613,6 @@
 
         return (
           <div className="space-y-6">
-            {/* NOTIFICACIÓN FIN DE MES DÍA 30 */}
             {isDay30 && (
               <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-orange-500/20 border border-yellow-500/40 text-yellow-200 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg animate-pulse">
                 <div className="flex items-center gap-3">
@@ -964,7 +940,6 @@
         const [desc, setDesc] = useState('');
         const [showLiqModal, setShowLiqModal] = useState(false);
 
-        // Formulario de Liquidación personalizada
         const [liqSource, setLiqSource] = useState('Sur distribución');
         const [liqTitle, setLiqTitle] = useState('');
         const [liqStartDate, setLiqStartDate] = useState('2026-09-01');
@@ -1020,10 +995,14 @@
           setLiqTitle('');
         };
 
-        const deleteIncome = (id) => setIncomes(incomes.filter(i => i.id !== id));
+        // PROTEGIDO CON CÓDIGO DE VALIDACIÓN
+        const deleteIncome = (id) => {
+          if (!requestValidation()) return;
+          setIncomes(incomes.filter(i => i.id !== id));
+        };
+
         const deleteLiq = (id) => setLiquidations(liquidations.filter(l => l.id !== id));
 
-        // Calcular vista previa de montos agrupados en la liquidación actual
         const matchingIncomesForLiq = incomes.filter(i => 
           i.source === liqSource && i.date >= liqStartDate && i.date <= liqEndDate
         );
@@ -1031,8 +1010,6 @@
 
         return (
           <div className="space-y-6">
-            
-            {/* BOTÓN PROMINENTE: GENERAR LIQUIDACIÓN DÍAS VARIABLES */}
             <div className={`p-5 rounded-2xl shadow-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${darkMode ? 'bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border-blue-500/30' : 'bg-gradient-to-r from-blue-50 via-cyan-50 to-white border-blue-200'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30">
@@ -1053,7 +1030,6 @@
               </button>
             </div>
 
-            {/* MODAL DE GENERAR LIQUIDACIÓN */}
             {showLiqModal && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
                 <div className={`w-full max-w-lg p-6 rounded-2xl shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
@@ -1115,7 +1091,6 @@
               </div>
             )}
 
-            {/* LISTA DE LIQUIDACIONES ACTIVAS */}
             {liquidations.length > 0 && (
               <div className={`p-4 rounded-2xl shadow-lg border ${darkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Liquidaciones Asignadas</h4>
@@ -1224,7 +1199,11 @@
           setAmount('');
         };
 
-        const deleteExpense = (id) => setExpenses(expenses.filter(e => e.id !== id));
+        // PROTEGIDO CON CÓDIGO DE VALIDACIÓN
+        const deleteExpense = (id) => {
+          if (!requestValidation()) return;
+          setExpenses(expenses.filter(e => e.id !== id));
+        };
 
         return (
           <div className="space-y-6">
@@ -1295,9 +1274,11 @@
         const [amount, setAmount] = useState('');
         const [desc, setDesc] = useState('');
 
+        // PROTEGIDO CON CÓDIGO DE VALIDACIÓN EN CARGA
         const handleSubmit = (e) => {
           e.preventDefault();
           if (!amount || !date) return;
+          if (!requestValidation()) return;
           
           const newAdv = {
             id: Date.now().toString(),
@@ -1311,7 +1292,11 @@
           setDesc('');
         };
 
-        const deleteAdvance = (id) => setAdvances(advances.filter(a => a.id !== id));
+        // PROTEGIDO CON CÓDIGO DE VALIDACIÓN EN ELIMINACIÓN
+        const deleteAdvance = (id) => {
+          if (!requestValidation()) return;
+          setAdvances(advances.filter(a => a.id !== id));
+        };
 
         return (
           <div className="space-y-6">
@@ -1372,89 +1357,50 @@
       };
 
       return (
-        <div className={`min-h-screen font-sans pb-12 transition-colors duration-300 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
-          
-          {/* ENCABEZADO Y MENÚ SUPERIOR FIJO */}
-          <header className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-colors ${darkMode ? 'bg-slate-950/95 border-slate-800' : 'bg-white/95 border-slate-200'}`}>
-            <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
-              <div className="flex items-center justify-between w-full md:w-auto">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-md font-black text-lg ${darkMode ? 'bg-slate-900 border-slate-800 text-cyan-400' : 'bg-slate-900 border-slate-800 text-cyan-400'}`}>
-                    HL
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-base font-black tracking-wider">HERMANOS LOGÍSTICA</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-widest ${darkMode ? 'bg-cyan-950 text-cyan-400 border border-cyan-800/50' : 'bg-blue-50 text-blue-600 border border-blue-200'}`}>PRO</span>
-                    </div>
-                    <p className={`text-[10px] font-medium tracking-wide ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Mercado Libre • Sur • Uber</p>
-                  </div>
+        <div className={`min-h-screen transition-colors duration-200 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+          <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+            <header className={`p-4 rounded-2xl shadow-xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-black text-xl tracking-wider shadow-lg shadow-cyan-500/20">
+                  HL
                 </div>
+                <div>
+                  <h1 className="text-xl font-black tracking-tight">Hermanos Logística <span className="text-cyan-400 text-xs px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 uppercase font-bold">PRO</span></h1>
+                  <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Control Financiero & Gestión Operativa</p>
+                </div>
+              </div>
 
-                <button 
-                  onClick={() => setDarkMode(!darkMode)}
-                  className={`p-2.5 rounded-xl border transition-all md:hidden ${darkMode ? 'bg-slate-900 border-slate-800 text-yellow-400 hover:bg-slate-800' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}
-                  title="Cambiar tema"
-                >
-                  {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              <div className={`flex flex-wrap items-center justify-center gap-1 p-1.5 rounded-xl border ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
+                <button onClick={() => setActiveTab('dashboard')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 shadow' : (darkMode ? 'text-slate-400 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900')}`}>
+                  <PieChart size={16} /> Resumen
+                </button>
+                <button onClick={() => setActiveTab('incomes')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'incomes' ? 'bg-cyan-500 text-slate-950 shadow' : (darkMode ? 'text-slate-400 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900')}`}>
+                  <TrendingUp size={16} /> Ingresos
+                </button>
+                <button onClick={() => setActiveTab('expenses')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'expenses' ? 'bg-cyan-500 text-slate-950 shadow' : (darkMode ? 'text-slate-400 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900')}`}>
+                  <TrendingDown size={16} /> Gastos
+                </button>
+                <button onClick={() => setActiveTab('advances')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'advances' ? 'bg-cyan-500 text-slate-950 shadow' : (darkMode ? 'text-slate-400 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900')}`}>
+                  <Send size={16} /> Adelantos
+                </button>
+                <button onClick={() => setActiveTab('reports')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 shadow' : (darkMode ? 'text-slate-400 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900')}`}>
+                  <FileText size={16} /> Informes PDF
                 </button>
               </div>
 
-              {/* BARRA DE NAVEGACIÓN SUPERIOR FIJA */}
-              <div className="flex items-center gap-2 w-full md:w-auto justify-between sm:justify-end">
-                <nav className={`flex items-center gap-1 p-1 rounded-2xl border w-full sm:w-auto overflow-x-auto ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
-                  <button 
-                    onClick={() => setActiveTab('dashboard')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${activeTab === 'dashboard' ? (darkMode ? 'text-cyan-400 bg-cyan-950/60 border border-cyan-500/30' : 'text-blue-600 bg-white shadow-sm') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                  >
-                    <PieChart size={15} /> Resumen
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('incomes')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${activeTab === 'incomes' ? (darkMode ? 'text-cyan-400 bg-cyan-950/60 border border-cyan-500/30' : 'text-blue-600 bg-white shadow-sm') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                  >
-                    <TrendingUp size={15} /> Ingresos
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('expenses')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${activeTab === 'expenses' ? (darkMode ? 'text-cyan-400 bg-cyan-950/60 border border-cyan-500/30' : 'text-blue-600 bg-white shadow-sm') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                  >
-                    <TrendingDown size={15} /> Gastos
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('advances')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${activeTab === 'advances' ? (darkMode ? 'text-cyan-400 bg-cyan-950/60 border border-cyan-500/30' : 'text-blue-600 bg-white shadow-sm') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                  >
-                    <Send size={15} /> Adelantos
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('reports')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${activeTab === 'reports' ? (darkMode ? 'text-cyan-400 bg-cyan-950/60 border border-cyan-500/30' : 'text-blue-600 bg-white shadow-sm') : (darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                  >
-                    <FileText size={15} /> Informes PDF
-                  </button>
-                </nav>
+              <button onClick={() => setDarkMode(!darkMode)} className={`p-2.5 rounded-xl border transition ${darkMode ? 'bg-slate-800 border-slate-700 text-yellow-400' : 'bg-slate-100 border-slate-200 text-slate-700'}`}>
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            </header>
 
-                <button 
-                  onClick={() => setDarkMode(!darkMode)}
-                  className={`hidden md:block p-2 rounded-xl border transition-all ${darkMode ? 'bg-slate-900 border-slate-800 text-yellow-400 hover:bg-slate-800' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'}`}
-                  title="Cambiar tema"
-                >
-                  {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
-              </div>
-
-            </div>
-          </header>
-
-          <main className="max-w-5xl mx-auto px-4 py-6">
-            {activeTab === 'dashboard' && <Dashboard />}
-            {activeTab === 'incomes' && <Incomes />}
-            {activeTab === 'expenses' && <Expenses />}
-            {activeTab === 'advances' && <Advances />}
-            {activeTab === 'reports' && <Reports />}
-          </main>
-
+            <main>
+              {activeTab === 'dashboard' && <Dashboard />}
+              {activeTab === 'incomes' && <Incomes />}
+              {activeTab === 'expenses' && <Expenses />}
+              {activeTab === 'advances' && <Advances />}
+              {activeTab === 'reports' && <Reports />}
+            </main>
+          </div>
         </div>
       );
     }
