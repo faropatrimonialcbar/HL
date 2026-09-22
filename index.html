@@ -217,7 +217,6 @@
         if (matchedLiq) {
           return getMondayOfWeek(matchedLiq.targetWeekStart);
         }
-        // Si es Mercado Libre o Sur distribución y NO hay liquidación creada, no retorna semana asignada
         if (inc.source === 'Mercado Libre' || inc.source === 'Sur distribución') {
           return null;
         }
@@ -247,7 +246,8 @@
         ].filter(Boolean);
 
         let weeks = [];
-        let currentDebt = 0;
+        let currentExpenseDebt = 0;
+        let simonAdvanceDebt = 0;
         let totalSimon = 0;
         let totalFranBase = 0;
         let totalFranReimbursed = 0;
@@ -303,30 +303,37 @@
             const deficitBizGenerated = Math.abs(Math.min(0, cashInHand));
             
             const debtGenerated = debtGeneratedThisWeekExp + deficitBizGenerated;
-            
+            currentExpenseDebt += debtGenerated;
+
             let reimbursedHistorical = 0;
             let distributable = 0;
 
-            if (weekNet < 0) {
-              currentDebt += debtGenerated;
-            } else {
-              reimbursedHistorical = Math.min(currentDebt, remainingCash);
-              currentDebt -= reimbursedHistorical;
+            if (remainingCash > 0 && currentExpenseDebt > 0) {
+              reimbursedHistorical = Math.min(currentExpenseDebt, remainingCash);
+              currentExpenseDebt -= reimbursedHistorical;
               distributable = remainingCash - reimbursedHistorical;
+            } else {
+              distributable = Math.max(0, remainingCash);
             }
 
             const simonBase = distributable * 0.45;
             const franBase = distributable * 0.55;
             const totalReimbursementWeek = reimbursedThisWeekExp + reimbursedHistorical;
 
-            const simonFinal = simonBase - tAdvances;
-            const franFinal = franBase + totalReimbursementWeek + tAdvances;
+            simonAdvanceDebt += tAdvances;
+            const advanceRepaid = Math.min(simonBase, simonAdvanceDebt);
+            simonAdvanceDebt -= advanceRepaid;
+
+            const simonFinal = simonBase - advanceRepaid;
+            const franFinal = franBase + totalReimbursementWeek + advanceRepaid;
+
+            const currentDebt = currentExpenseDebt + simonAdvanceDebt;
 
             totalSimon += simonFinal;
             totalFranBase += franBase;
             totalFranReimbursed += totalReimbursementWeek;
 
-            if (tIncome > 0 || tExpense > 0 || debtGenerated > 0 || reimbursedHistorical > 0 || tAdvances > 0) {
+            if (tIncome > 0 || tExpense > 0 || debtGenerated > 0 || reimbursedHistorical > 0 || tAdvances > 0 || advanceRepaid > 0) {
               weeks.push({
                 id: startStr,
                 label: `${currentWeekStart.toLocaleDateString('es-AR', {day:'2-digit', month:'short'})} al ${weekEnd.toLocaleDateString('es-AR', {day:'2-digit', month:'short'})}`,
@@ -335,6 +342,7 @@
                 tExpenseMe,
                 tExpenseBiz,
                 tAdvances,
+                advanceRepaid,
                 weekNet,
                 reimbursedThisWeekExp,
                 debtGeneratedThisWeekExp,
@@ -366,7 +374,7 @@
             totalSimon,
             totalFranBase,
             totalFranReimbursed,
-            currentDebt
+            currentDebt: currentExpenseDebt + simonAdvanceDebt
           },
           weeklyEvolution: weeks.reverse()
         };
@@ -797,7 +805,7 @@
                   )}
                   {financialData.stats.currentDebt > 0 && (
                     <div className="flex justify-between text-xs text-rose-400 font-semibold pt-1">
-                      <span>Deuda a favor pendiente:</span>
+                      <span>Deuda a favor pendiente (Gastos/Adelantos):</span>
                       <span>+{formatCurrency(financialData.stats.currentDebt)}</span>
                     </div>
                   )}
@@ -870,7 +878,7 @@
                       )}
                       {week.tAdvances > 0 && (
                          <div className="flex justify-between items-center bg-purple-950/40 text-purple-300 px-3 py-2 rounded-xl border border-purple-500/20">
-                            <span>Adelantos / Créditos a Simón:</span>
+                            <span>Adelantos / Créditos a Simón (Otorgados):</span>
                             <span className="font-black">{formatCurrency(week.tAdvances)}</span>
                          </div>
                       )}
@@ -890,10 +898,10 @@
                             <span>Ganancia neta (45%):</span>
                             <span className="font-semibold">{formatCurrency(week.simonGross)}</span>
                           </div>
-                          {week.tAdvances > 0 && (
+                          {week.advanceRepaid > 0 && (
                             <div className="flex justify-between items-center text-rose-400">
-                              <span>Menos adelanto / crédito:</span>
-                              <span className="font-semibold">-{formatCurrency(week.tAdvances)}</span>
+                              <span>Descuento por adelanto / crédito:</span>
+                              <span className="font-semibold">-{formatCurrency(week.advanceRepaid)}</span>
                             </div>
                           )}
                         </div>
@@ -923,10 +931,10 @@
                             </div>
                           )}
 
-                          {week.tAdvances > 0 && (
+                          {week.advanceRepaid > 0 && (
                             <div className="flex justify-between items-center text-purple-400">
-                              <span>Adelanto descontado a Simón:</span>
-                              <span className="font-semibold">+{formatCurrency(week.tAdvances)}</span>
+                              <span>Adelanto recuperado de Simón:</span>
+                              <span className="font-semibold">+{formatCurrency(week.advanceRepaid)}</span>
                             </div>
                           )}
                         </div>
@@ -1016,7 +1024,6 @@
           setLiqTitle('');
         };
 
-        // PROTEGIDO CON CÓDIGO DE VALIDACIÓN
         const deleteIncome = (id) => {
           if (!requestValidation()) return;
           setIncomes(incomes.filter(i => i.id !== id));
@@ -1220,7 +1227,6 @@
           setAmount('');
         };
 
-        // PROTEGIDO CON CÓDIGO DE VALIDACIÓN
         const deleteExpense = (id) => {
           if (!requestValidation()) return;
           setExpenses(expenses.filter(e => e.id !== id));
@@ -1295,7 +1301,6 @@
         const [amount, setAmount] = useState('');
         const [desc, setDesc] = useState('');
 
-        // PROTEGIDO CON CÓDIGO DE VALIDACIÓN EN CARGA
         const handleSubmit = (e) => {
           e.preventDefault();
           if (!amount || !date) return;
@@ -1313,7 +1318,6 @@
           setDesc('');
         };
 
-        // PROTEGIDO CON CÓDIGO DE VALIDACIÓN EN ELIMINACIÓN
         const deleteAdvance = (id) => {
           if (!requestValidation()) return;
           setAdvances(advances.filter(a => a.id !== id));
