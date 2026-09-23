@@ -14,8 +14,9 @@
   <!-- Libraries for PDF Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* Ocultar barra de desplazamiento en elementos scrollables */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
@@ -27,87 +28,46 @@
   <script type="text/babel">
     const { useState, useMemo, useEffect, useRef } = React;
 
-    // --- CÓDIGO DE VALIDACIÓN SEGURIDAD ---
+    // --- CONFIGURACIÓN DE SUPABASE ---
+    // REEMPLAZA ESTOS DOS VALORES CON TUS CREDENCIALES DE SUPABASE:
+    const SUPABASE_URL = https://potcjvonrebhynjcbjmk.supabase.co/rest/v1/;
+    const SUPABASE_ANON_KEY = sb_publishable_4mgBR1bUBc73Z2tDjQSoTA_xNXaDolr;
+    
+    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    // CÓDIGO DE VALIDACIÓN SEGURIDAD
     const VALIDATION_CODE = "05272502";
 
     const requestValidation = () => {
       const input = prompt("Ingrese el código de validación para autorizar esta acción:");
-      if (input === VALIDATION_CODE) {
-        return true;
-      }
-      return false;
+      return input === VALIDATION_CODE;
     };
 
-    const PieChart = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-    );
-    const Wallet = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
-    );
-    const TrendingUp = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-    );
-    const TrendingDown = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
-    );
-    const Receipt = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
-    );
-    const Truck = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-    );
-    const Calendar = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    );
-    const DollarSign = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-    );
-    const Trash2 = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-    );
-    const PlusCircle = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-    );
-    const CreditCard = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-    );
-    const ChevronLeft = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"/></svg>
-    );
-    const ChevronRight = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>
-    );
-    const Moon = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-    );
-    const Sun = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    );
-    const Activity = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    );
-    const Package = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-    );
-    const ShieldCheck = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-    );
-    const Send = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-    );
-    const FileText = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    );
-    const Download = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    );
-    const BarChart = ({ size = 20, className = "" }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
-    );
+    // --- ICONOS SVG ---
+    const PieChart = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>;
+    const Wallet = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>;
+    const TrendingUp = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
+    const TrendingDown = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>;
+    const Receipt = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>;
+    const Truck = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>;
+    const Calendar = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+    const DollarSign = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
+    const Trash2 = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>;
+    const PlusCircle = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>;
+    const CreditCard = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>;
+    const ChevronLeft = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"/></svg>;
+    const ChevronRight = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>;
+    const Moon = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
+    const Sun = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
+    const Activity = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
+    const Package = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
+    const ShieldCheck = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>;
+    const Send = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
+    const FileText = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
+    const Download = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+    const BarChart = ({ size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>;
 
-    const formatCurrency = (amount) => {
-      return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
-    };
+    const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 
     const getMondayOfWeek = (dateStr) => {
       if (!dateStr) return null;
@@ -123,85 +83,61 @@
       return `${y}-${m}-${da}`;
     };
 
-    const initialIncomes = [
-      { id: '1', date: '2026-09-03', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: '2', date: '2026-09-04', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: 'u1', date: '2026-09-05', source: 'Uber', amount: 25000, desc: 'Noche' },
-      { id: 'u2', date: '2026-09-06', source: 'Uber', amount: 30000, desc: 'Tarde' },
-      { id: '3', date: '2026-09-08', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: 's1', date: '2026-09-09', source: 'Sur distribución', amount: 45000, desc: 'Ruta 1' },
-      { id: '4', date: '2026-09-10', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: '5', date: '2026-09-11', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: '6', date: '2026-09-12', source: 'Mercado Libre', amount: 130000, desc: 'Fin de semana' },
-      { id: 'u3', date: '2026-09-13', source: 'Uber', amount: 35000, desc: 'Domingo' },
-      { id: '7', date: '2026-09-14', source: 'Mercado Libre', amount: 78000, desc: 'Ambulancia a otra camioneta' },
-      { id: '8', date: '2026-09-15', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: '9', date: '2026-09-16', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: 's2', date: '2026-09-16', source: 'Sur distribución', amount: 52000, desc: 'Ruta 2' },
-      { id: '10', date: '2026-09-17', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: 's3', date: '2026-09-17', source: 'Sur distribución', amount: 48000, desc: 'Ruta 1' },
-    ];
-
-    const initialExpenses = [
-      { id: 'e1', date: '2026-09-04', category: 'Combustible', amount: 25000, paidBy: 'business' },
-      { id: 'e2', date: '2026-09-05', category: 'Cochera', amount: 30000, paidBy: 'me' },
-      { id: 'e3', date: '2026-09-08', category: 'Peaje', amount: 2500, paidBy: 'me' },
-      { id: 'e4', date: '2026-09-11', category: 'Combustible', amount: 30000, paidBy: 'business' },
-      { id: 'e5', date: '2026-09-13', category: 'Lavadero', amount: 8000, paidBy: 'me' },
-      { id: 'e6', date: '2026-09-15', category: 'Seguro', amount: 45000, paidBy: 'business' },
-      { id: 'e7', date: '2026-09-16', category: 'Parchado', amount: 5000, paidBy: 'me' },
-    ];
-
-    const initialAdvances = [
-      { id: 'a1', date: '2026-09-10', amount: 15000, desc: 'Dinero para comida' }
-    ];
-
-    const initialLiquidations = [
-      {
-        id: 'liq-demo-1',
-        source: 'Sur distribución',
-        title: 'Liquidación Sur - Quincena 1 Set',
-        startDate: '2026-09-01',
-        endDate: '2026-09-15',
-        targetWeekStart: '2026-09-14'
-      }
-    ];
-
     function App() {
       const [activeTab, setActiveTab] = useState('dashboard');
       const [darkMode, setDarkMode] = useState(true);
-      const [incomes, setIncomes] = useState(() => {
-        const saved = localStorage.getItem('logistica_incomes_v5');
-        return saved ? JSON.parse(saved) : initialIncomes;
-      });
-      const [expenses, setExpenses] = useState(() => {
-        const saved = localStorage.getItem('logistica_expenses_v5');
-        return saved ? JSON.parse(saved) : initialExpenses;
-      });
-      const [advances, setAdvances] = useState(() => {
-        const saved = localStorage.getItem('logistica_advances_v1');
-        return saved ? JSON.parse(saved) : initialAdvances;
-      });
-      const [liquidations, setLiquidations] = useState(() => {
-        const saved = localStorage.getItem('logistica_liquidations_v1');
-        return saved ? JSON.parse(saved) : initialLiquidations;
-      });
+      const [loading, setLoading] = useState(true);
+
+      const [incomes, setIncomes] = useState([]);
+      const [expenses, setExpenses] = useState([]);
+      const [advances, setAdvances] = useState([]);
+      const [liquidations, setLiquidations] = useState([]);
+
+      // CARGA DE DATOS Y TIEMPO REAL CON SUPABASE
+      const loadAllData = async () => {
+        if (!supabase) return;
+        setLoading(true);
+        try {
+          const [incRes, expRes, advRes, liqRes] = await Promise.all([
+            supabase.from('incomes').select('*').order('date', { ascending: false }),
+            supabase.from('expenses').select('*').order('date', { ascending: false }),
+            supabase.from('advances').select('*').order('date', { ascending: false }),
+            supabase.from('liquidations').select('*')
+          ]);
+
+          if (incRes.data) setIncomes(incRes.data);
+          if (expRes.data) setExpenses(expRes.data.map(e => ({ ...e, paidBy: e.paid_by })));
+          if (advRes.data) setAdvances(advRes.data);
+          if (liqRes.data) setLiquidations(liqRes.data.map(l => ({
+            ...l,
+            startDate: l.start_date,
+            endDate: l.end_date,
+            targetWeekStart: l.target_week_start
+          })));
+        } catch (err) {
+          console.error("Error al cargar datos de Supabase:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
 
       useEffect(() => {
-        localStorage.setItem('logistica_incomes_v5', JSON.stringify(incomes));
-      }, [incomes]);
+        loadAllData();
 
-      useEffect(() => {
-        localStorage.setItem('logistica_expenses_v5', JSON.stringify(expenses));
-      }, [expenses]);
+        // Subscripción en tiempo real
+        if (supabase) {
+          const channel = supabase
+            .channel('db-changes')
+            .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+              loadAllData();
+            })
+            .subscribe();
 
-      useEffect(() => {
-        localStorage.setItem('logistica_advances_v1', JSON.stringify(advances));
-      }, [advances]);
-
-      useEffect(() => {
-        localStorage.setItem('logistica_liquidations_v1', JSON.stringify(liquidations));
-      }, [liquidations]);
+          return () => {
+            supabase.removeChannel(channel);
+          };
+        }
+      }, []);
 
       const isDay30 = useMemo(() => {
         const today = new Date();
@@ -380,36 +316,28 @@
         };
       }, [incomes, expenses, advances, liquidations]);
 
+      // --- INFORMES ---
       const Reports = () => {
         const [selectedMonth, setSelectedMonth] = useState('2026-09');
         const [isGenerating, setIsGenerating] = useState(false);
         const reportRef = useRef();
 
-        const monthlyIncomes = useMemo(() => {
-          return incomes.filter(i => i.date.startsWith(selectedMonth));
-        }, [incomes, selectedMonth]);
-
-        const monthlyExpenses = useMemo(() => {
-          return expenses.filter(e => e.date.startsWith(selectedMonth));
-        }, [expenses, selectedMonth]);
+        const monthlyIncomes = useMemo(() => incomes.filter(i => i.date.startsWith(selectedMonth)), [incomes, selectedMonth]);
+        const monthlyExpenses = useMemo(() => expenses.filter(e => e.date.startsWith(selectedMonth)), [expenses, selectedMonth]);
 
         const totalMonthIncome = monthlyIncomes.reduce((a, b) => a + Number(b.amount), 0);
         const totalMonthExpense = monthlyExpenses.reduce((a, b) => a + Number(b.amount), 0);
         const netMonthProfit = totalMonthIncome - totalMonthExpense;
 
-        const monthBySource = useMemo(() => {
-          return monthlyIncomes.reduce((acc, curr) => {
-            acc[curr.source] = (acc[curr.source] || 0) + Number(curr.amount);
-            return acc;
-          }, {});
-        }, [monthlyIncomes]);
+        const monthBySource = useMemo(() => monthlyIncomes.reduce((acc, curr) => {
+          acc[curr.source] = (acc[curr.source] || 0) + Number(curr.amount);
+          return acc;
+        }, {}), [monthlyIncomes]);
 
-        const monthByCategory = useMemo(() => {
-          return monthlyExpenses.reduce((acc, curr) => {
-            acc[curr.category] = (acc[curr.category] || 0) + Number(curr.amount);
-            return acc;
-          }, {});
-        }, [monthlyExpenses]);
+        const monthByCategory = useMemo(() => monthlyExpenses.reduce((acc, curr) => {
+          acc[curr.category] = (acc[curr.category] || 0) + Number(curr.amount);
+          return acc;
+        }, {}), [monthlyExpenses]);
 
         const downloadPDF = async () => {
           if (!reportRef.current) return;
@@ -451,17 +379,8 @@
               </div>
 
               <div className="flex items-center gap-3">
-                <input 
-                  type="month" 
-                  value={selectedMonth} 
-                  onChange={e => setSelectedMonth(e.target.value)} 
-                  className={`p-2.5 rounded-xl border text-sm font-semibold outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
-                />
-                <button 
-                  onClick={downloadPDF} 
-                  disabled={isGenerating}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold px-4 py-2.5 rounded-xl transition shadow-lg shadow-cyan-500/20 flex items-center gap-2 text-xs"
-                >
+                <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className={`p-2.5 rounded-xl border text-sm font-semibold outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'}`} />
+                <button onClick={downloadPDF} disabled={isGenerating} className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold px-4 py-2.5 rounded-xl transition shadow-lg shadow-cyan-500/20 flex items-center gap-2 text-xs">
                   <Download size={16} /> {isGenerating ? 'Generando...' : 'Descargar PDF'}
                 </button>
               </div>
@@ -479,7 +398,7 @@
                 </div>
                 <div className="text-right text-xs text-slate-400">
                   <p>Emitido: {new Date().toLocaleDateString('es-AR')}</p>
-                  <p className="font-semibold text-emerald-400 mt-1">Estado: Auditado</p>
+                  <p className="font-semibold text-emerald-400 mt-1">Estado: Auditado Cloud</p>
                 </div>
               </div>
 
@@ -500,63 +419,47 @@
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
-                    <BarChart className="text-rose-400" size={18} /> Gastos por Rubro Categorizado
-                  </h4>
+                  <h4 className="text-sm font-bold mb-4 flex items-center gap-2"><BarChart className="text-rose-400" size={18} /> Gastos por Rubro Categorizado</h4>
                   <div className="space-y-3">
-                    {Object.keys(monthByCategory).length === 0 ? (
-                      <p className="text-xs text-slate-500 py-4 text-center">Sin gastos registrados este mes.</p>
-                    ) : (
+                    {Object.keys(monthByCategory).length === 0 ? <p className="text-xs text-slate-500 py-4 text-center">Sin gastos registrados este mes.</p> :
                       Object.entries(monthByCategory).map(([cat, amt]) => {
                         const pct = Math.round((amt / maxCatAmount) * 100);
                         return (
                           <div key={cat} className="space-y-1">
-                            <div className="flex justify-between text-xs font-medium">
-                              <span>{cat}</span>
-                              <span className="font-bold">{formatCurrency(amt)}</span>
-                            </div>
+                            <div className="flex justify-between text-xs font-medium"><span>{cat}</span><span className="font-bold">{formatCurrency(amt)}</span></div>
                             <div className="w-full h-3 bg-slate-800/40 rounded-full overflow-hidden">
                               <div className="h-full bg-gradient-to-r from-rose-500 to-orange-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }}></div>
                             </div>
                           </div>
                         );
                       })
-                    )}
+                    }
                   </div>
                 </div>
 
                 <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
-                    <TrendingUp className="text-cyan-400" size={18} /> Ingresos por Empresa / Operación
-                  </h4>
+                  <h4 className="text-sm font-bold mb-4 flex items-center gap-2"><TrendingUp className="text-cyan-400" size={18} /> Ingresos por Empresa / Operación</h4>
                   <div className="space-y-3">
-                    {Object.keys(monthBySource).length === 0 ? (
-                      <p className="text-xs text-slate-500 py-4 text-center">Sin ingresos registrados este mes.</p>
-                    ) : (
+                    {Object.keys(monthBySource).length === 0 ? <p className="text-xs text-slate-500 py-4 text-center">Sin ingresos registrados este mes.</p> :
                       Object.entries(monthBySource).map(([src, amt]) => {
                         const pct = Math.round((amt / maxSourceAmount) * 100);
                         const colorClass = src === 'Mercado Libre' ? 'from-yellow-400 to-amber-500' : src === 'Sur distribución' ? 'from-blue-500 to-cyan-500' : 'from-cyan-400 to-teal-400';
                         return (
                           <div key={src} className="space-y-1">
-                            <div className="flex justify-between text-xs font-medium">
-                              <span>{src}</span>
-                              <span className="font-bold">{formatCurrency(amt)}</span>
-                            </div>
+                            <div className="flex justify-between text-xs font-medium"><span>{src}</span><span className="font-bold">{formatCurrency(amt)}</span></div>
                             <div className="w-full h-3 bg-slate-800/40 rounded-full overflow-hidden">
                               <div className={`h-full bg-gradient-to-r ${colorClass} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }}></div>
                             </div>
                           </div>
                         );
                       })
-                    )}
+                    }
                   </div>
                 </div>
               </div>
 
               <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
-                  <PieChart className="text-emerald-400" size={18} /> División Mensual de Ganancias Neta
-                </h4>
+                <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><PieChart className="text-emerald-400" size={18} /> División Mensual de Ganancias Neta</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                   <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-950/10">
                     <p className="text-xs font-bold text-blue-400 uppercase">Simón (45% Libre)</p>
@@ -568,15 +471,12 @@
                   </div>
                 </div>
               </div>
-
-              <div className="border-t pt-4 text-center text-[10px] text-slate-500">
-                Documento de balance mensual autogenerado por Hermanos Logística PRO.
-              </div>
             </div>
           </div>
         );
       };
 
+      // --- DASHBOARD ---
       const Dashboard = () => {
         const [weekOffset, setWeekOffset] = useState(-1);
 
@@ -602,18 +502,6 @@
           const startStr = formatD(start);
           const endStr = formatD(end);
 
-          let mlCycleStr = null;
-          for (let i = 0; i < 7; i++) {
-            const curr = new Date(start);
-            curr.setDate(start.getDate() + i);
-            if (curr.getDate() === 15) {
-              const y = curr.getFullYear();
-              const m = String(curr.getMonth() + 1).padStart(2, '0');
-              mlCycleStr = `Corte 15/${m}/${y}`;
-              break;
-            }
-          }
-
           let surTotal = 0;
           let uberTotal = 0;
           let mlTotal = 0;
@@ -635,7 +523,6 @@
             surTotal,
             uberTotal,
             mlTotal,
-            mlCycleStr,
             total: surTotal + uberTotal + mlTotal
           };
         }, [incomes, weekOffset, liquidations]);
@@ -645,9 +532,7 @@
             {isDay30 && (
               <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-orange-500/20 border border-yellow-500/40 text-yellow-200 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg animate-pulse">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-yellow-500/20 text-yellow-400">
-                    <FileText size={22} />
-                  </div>
+                  <div className="p-2.5 rounded-xl bg-yellow-500/20 text-yellow-400"><FileText size={22} /></div>
                   <div>
                     <h4 className="font-bold text-sm">¡Recordatorio Fin de Mes (Día 30)!</h4>
                     <p className="text-xs text-yellow-300/80">Es momento de generar el informe financiero mensual en PDF y revisar los balances.</p>
@@ -660,44 +545,35 @@
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-cyan-500/30 text-slate-100 shadow-cyan-950/20' : 'bg-white border-slate-200 text-slate-800'}`}>
-                <div className="absolute top-0 right-0 p-4 opacity-10 text-cyan-400"><TrendingUp size={64} /></div>
+              <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-cyan-500/30 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
                 <div className="flex justify-between items-start mb-4 relative z-10">
                   <div>
                     <p className={`text-xs font-semibold tracking-wider uppercase ${darkMode ? 'text-cyan-400' : 'text-blue-600'}`}>Ingresos Totales</p>
                     <h3 className="text-3xl font-black mt-1 tracking-tight">{formatCurrency(financialData.stats.totalIncome)}</h3>
                   </div>
-                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-cyan-950/50 border-cyan-500/30 text-cyan-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
-                    <TrendingUp size={22} />
-                  </div>
+                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-cyan-950/50 border-cyan-500/30 text-cyan-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}><TrendingUp size={22} /></div>
                 </div>
                 <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-blue-600"></div>
               </div>
 
-              <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-rose-500/30 text-slate-100 shadow-rose-950/20' : 'bg-white border-slate-200 text-slate-800'}`}>
-                <div className="absolute top-0 right-0 p-4 opacity-10 text-rose-400"><TrendingDown size={64} /></div>
+              <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-rose-500/30 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
                 <div className="flex justify-between items-start mb-4 relative z-10">
                   <div>
                     <p className={`text-xs font-semibold tracking-wider uppercase ${darkMode ? 'text-rose-400' : 'text-rose-600'}`}>Gastos Totales</p>
                     <h3 className="text-3xl font-black mt-1 tracking-tight">{formatCurrency(financialData.stats.totalExpense)}</h3>
                   </div>
-                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-rose-950/50 border-rose-500/30 text-rose-400' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
-                    <TrendingDown size={22} />
-                  </div>
+                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-rose-950/50 border-rose-500/30 text-rose-400' : 'bg-rose-50 border-rose-100 text-rose-600'}`}><TrendingDown size={22} /></div>
                 </div>
                 <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-orange-600"></div>
               </div>
 
-              <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-emerald-500/30 text-slate-100 shadow-emerald-950/20' : 'bg-white border-slate-200 text-slate-800'}`}>
-                <div className="absolute top-0 right-0 p-4 opacity-10 text-emerald-400"><Wallet size={64} /></div>
+              <div className={`rounded-2xl p-6 shadow-xl relative overflow-hidden border backdrop-blur-md transition-all ${darkMode ? 'bg-slate-900/80 border-emerald-500/30 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
                 <div className="flex justify-between items-start mb-4 relative z-10">
                   <div>
                     <p className={`text-xs font-semibold tracking-wider uppercase ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>Ganancia Neta</p>
                     <h3 className="text-3xl font-black mt-1 tracking-tight text-emerald-500">{formatCurrency(financialData.stats.netProfit)}</h3>
                   </div>
-                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-emerald-950/50 border-emerald-500/30 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
-                    <Wallet size={22} />
-                  </div>
+                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-emerald-950/50 border-emerald-500/30 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}><Wallet size={22} /></div>
                 </div>
                 <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
               </div>
@@ -708,19 +584,19 @@
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-yellow-500/40' : 'bg-white border-slate-200 hover:shadow-xl'}`}>
+              <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-yellow-500/40' : 'bg-white border-slate-200'}`}>
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FFE600]"></div>
                 <p className={`text-xs uppercase font-bold mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Mercado Libre</p>
                 <p className={`text-2xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.incomesBySource['Mercado Libre'] || 0)}</p>
               </div>
               
-              <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-blue-500/40' : 'bg-white border-slate-200 hover:shadow-xl'}`}>
+              <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-blue-500/40' : 'bg-white border-slate-200'}`}>
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
                 <p className={`text-xs uppercase font-bold mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Sur distribución</p>
                 <p className={`text-2xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.incomesBySource['Sur distribución'] || 0)}</p>
               </div>
 
-              <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-cyan-500/40' : 'bg-white border-slate-200 hover:shadow-xl'}`}>
+              <div className={`rounded-2xl p-5 shadow-lg border relative overflow-hidden transition ${darkMode ? 'bg-slate-900/60 border-slate-800 hover:border-cyan-500/40' : 'bg-white border-slate-200'}`}>
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-400"></div>
                 <p className={`text-xs uppercase font-bold mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Uber</p>
                 <p className={`text-2xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.incomesBySource['Uber'] || 0)}</p>
@@ -730,41 +606,26 @@
             <h2 className={`text-lg font-bold mt-8 mb-4 border-b pb-2 flex flex-col md:flex-row md:justify-between md:items-center gap-3 ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>
               <span className="flex items-center gap-2"><Package size={18} className="text-yellow-500" /> Liquidación Semanal a Cobrar</span>
               <div className="flex items-center space-x-2 text-sm font-normal">
-                <button onClick={() => setWeekOffset(o => o - 1)} className={`p-2 rounded-xl transition ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
-                  <ChevronLeft size={16} />
-                </button>
-                <span className={`px-4 py-1.5 rounded-xl text-xs font-bold border shadow-sm whitespace-nowrap ${darkMode ? 'bg-slate-900 border-slate-700 text-cyan-400' : 'bg-white border-slate-200 text-slate-700'}`}>
-                  {weeklyLiq.startFormatted} al {weeklyLiq.endFormatted}
-                </span>
-                <button onClick={() => setWeekOffset(o => o + 1)} className={`p-2 rounded-xl transition ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
-                  <ChevronRight size={16} />
-                </button>
+                <button onClick={() => setWeekOffset(o => o - 1)} className={`p-2 rounded-xl transition ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200'}`}><ChevronLeft size={16} /></button>
+                <span className={`px-4 py-1.5 rounded-xl text-xs font-bold border shadow-sm whitespace-nowrap ${darkMode ? 'bg-slate-900 border-slate-700 text-cyan-400' : 'bg-white border-slate-200'}`}>{weeklyLiq.startFormatted} al {weeklyLiq.endFormatted}</span>
+                <button onClick={() => setWeekOffset(o => o + 1)} className={`p-2 rounded-xl transition ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200'}`}><ChevronRight size={16} /></button>
               </div>
             </h2>
             
             <div className={`rounded-2xl p-6 shadow-xl border backdrop-blur-md relative overflow-hidden ${darkMode ? 'bg-slate-900/80 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
               <div className="space-y-3 relative z-10 text-sm">
                 <div className={`flex justify-between items-center border-b pb-3 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                  <span className="flex items-center gap-2 font-medium">
-                     <div className="w-2 h-2 rounded-full bg-blue-500"></div> Sur distribución
-                  </span>
+                  <span className="flex items-center gap-2 font-medium"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Sur distribución</span>
                   <span className="font-bold">{formatCurrency(weeklyLiq.surTotal)}</span>
                 </div>
-                
                 <div className={`flex justify-between items-center border-b pb-3 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                  <span className="flex items-center gap-2 font-medium">
-                     <div className="w-2 h-2 rounded-full bg-cyan-400"></div> Uber
-                  </span>
+                  <span className="flex items-center gap-2 font-medium"><div className="w-2 h-2 rounded-full bg-cyan-400"></div> Uber</span>
                   <span className="font-bold">{formatCurrency(weeklyLiq.uberTotal)}</span>
                 </div>
-
                 <div className={`flex justify-between items-center border-b pb-3 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                  <span className="flex items-center gap-2 font-medium">
-                     <div className="w-2 h-2 rounded-full bg-[#FFE600]"></div> Mercado Libre
-                  </span>
+                  <span className="flex items-center gap-2 font-medium"><div className="w-2 h-2 rounded-full bg-[#FFE600]"></div> Mercado Libre</span>
                   <span className="font-bold">{formatCurrency(weeklyLiq.mlTotal)}</span>
                 </div>
-
                 <div className="flex justify-between items-center pt-2">
                   <span className="font-bold uppercase tracking-wider text-xs">Total Bruto a Ingresar</span>
                   <span className="text-2xl font-black text-emerald-400">{formatCurrency(weeklyLiq.total)}</span>
@@ -779,35 +640,20 @@
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className={`rounded-2xl p-6 shadow-xl border relative overflow-hidden ${darkMode ? 'bg-slate-900/80 border-blue-500/30' : 'bg-white border-slate-200'}`}>
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
-                <div className="flex items-center gap-3 mb-4 text-blue-400">
-                  <PieChart size={20} />
-                  <h3 className="font-bold tracking-wider text-xs uppercase">Simón (45%)</h3>
-                </div>
+                <div className="flex items-center gap-3 mb-4 text-blue-400"><PieChart size={20} /><h3 className="font-bold tracking-wider text-xs uppercase">Simón (45%)</h3></div>
                 <p className={`text-3xl font-black ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(financialData.stats.totalSimon)}</p>
               </div>
               
               <div className={`rounded-2xl p-6 shadow-xl border relative overflow-hidden ${darkMode ? 'bg-slate-900/80 border-emerald-500/30' : 'bg-emerald-50 border-emerald-100'}`}>
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
-                <div className="flex items-center gap-3 mb-4 text-emerald-500">
-                  <Wallet size={20} />
-                  <h3 className="font-bold tracking-wider text-xs uppercase">Fran (55%)</h3>
-                </div>
+                <div className="flex items-center gap-3 mb-4 text-emerald-500"><Wallet size={20} /><h3 className="font-bold tracking-wider text-xs uppercase">Fran (55%)</h3></div>
                 <div className="space-y-2">
-                  <div className={`flex justify-between text-xs ${darkMode ? 'text-slate-400' : 'text-emerald-800'}`}>
-                    <span>Ganancia base:</span>
-                    <span className="font-semibold">{formatCurrency(financialData.stats.totalFranBase)}</span>
-                  </div>
+                  <div className={`flex justify-between text-xs ${darkMode ? 'text-slate-400' : 'text-emerald-800'}`}><span>Ganancia base:</span><span className="font-semibold">{formatCurrency(financialData.stats.totalFranBase)}</span></div>
                   {financialData.stats.totalFranReimbursed > 0 && (
-                    <div className={`flex justify-between text-xs ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
-                      <span>Reintegros de gastos:</span>
-                      <span className="font-semibold">+{formatCurrency(financialData.stats.totalFranReimbursed)}</span>
-                    </div>
+                    <div className={`flex justify-between text-xs ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}><span>Reintegros de gastos:</span><span className="font-semibold">+{formatCurrency(financialData.stats.totalFranReimbursed)}</span></div>
                   )}
                   {financialData.stats.currentDebt > 0 && (
-                    <div className="flex justify-between text-xs text-rose-400 font-semibold pt-1">
-                      <span>Deuda a favor pendiente (Gastos/Adelantos):</span>
-                      <span>+{formatCurrency(financialData.stats.currentDebt)}</span>
-                    </div>
+                    <div className="flex justify-between text-xs text-rose-400 font-semibold pt-1"><span>Deuda a favor pendiente (Gastos/Adelantos):</span><span>+{formatCurrency(financialData.stats.currentDebt)}</span></div>
                   )}
                   <div className={`border-t pt-2 mt-2 ${darkMode ? 'border-slate-800' : 'border-emerald-200'}`}>
                     <p className="text-3xl font-black text-emerald-500">{formatCurrency(financialData.stats.totalFranBase + financialData.stats.totalFranReimbursed)}</p>
@@ -818,180 +664,41 @@
 
             <h2 className={`text-lg font-bold mt-10 mb-4 border-b pb-2 ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>Evolución Histórica Semanal</h2>
             <div className="space-y-4">
-              {financialData.weeklyEvolution.length === 0 ? (
-                <p className={`text-center py-6 text-sm rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>No hay datos suficientes para mostrar la evolución.</p>
-              ) : (
-                financialData.weeklyEvolution.map((week) => (
-                  <div key={week.id} className={`rounded-2xl p-5 shadow-xl border transition hover:scale-[1.01] ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    <h3 className={`font-bold mb-3 border-b pb-2 text-sm ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-100'}`}>{week.label}</h3>
-                    
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Ingresos</p>
-                        <p className="font-black text-cyan-400 text-lg">{formatCurrency(week.tIncome)}</p>
-                      </div>
-                      <div>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Gastos Totales</p>
-                        <p className="font-black text-rose-500 text-lg">{formatCurrency(week.tExpense)}</p>
-                      </div>
+              {financialData.weeklyEvolution.map((week) => (
+                <div key={week.id} className={`rounded-2xl p-5 shadow-xl border transition ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
+                  <h3 className={`font-bold mb-3 border-b pb-2 text-sm ${darkMode ? 'text-slate-200 border-slate-800' : 'text-slate-800'}`}>{week.label}</h3>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div><p className="text-[10px] font-bold uppercase text-slate-500">Ingresos</p><p className="font-black text-cyan-400 text-lg">{formatCurrency(week.tIncome)}</p></div>
+                    <div><p className="text-[10px] font-bold uppercase text-slate-500">Gastos Totales</p><p className="font-black text-rose-500 text-lg">{formatCurrency(week.tExpense)}</p></div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className={`p-4 rounded-xl border relative ${darkMode ? 'bg-blue-950/20 border-blue-500/30' : 'bg-blue-50'}`}>
+                      <p className="text-[10px] text-blue-400 font-bold mb-1 uppercase">Liquidación Simón</p>
+                      <p className="font-black text-blue-400 text-lg">{formatCurrency(week.simon)}</p>
                     </div>
-
-                    <div className={`mb-4 space-y-1.5 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {week.tExpenseBiz > 0 && (
-                        <div className="flex justify-between px-1">
-                          <span>Pagado c/ Fondo del Negocio:</span>
-                          <span className="font-medium">{formatCurrency(week.tExpenseBiz)}</span>
-                        </div>
-                      )}
-                      {week.tExpenseMe > 0 && (
-                        <div className={`flex justify-between px-1 font-medium ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-                          <span>Pagado c/ Tu Bolsillo (Fran):</span>
-                          <span>{formatCurrency(week.tExpenseMe)}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className={`mb-4 space-y-1.5 border-t pt-3 text-xs ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                      {week.reimbursedThisWeekExp > 0 && (
-                         <div className="flex justify-between items-center bg-cyan-950/40 text-cyan-300 px-3 py-2 rounded-xl border border-cyan-500/20">
-                            <span>Reintegro a Fran (Gastos semana):</span>
-                            <span className="font-black">-{formatCurrency(week.reimbursedThisWeekExp)}</span>
-                         </div>
-                      )}
-                      {week.deficitBizGenerated > 0 && (
-                         <div className="flex justify-between items-center bg-rose-950/40 text-rose-300 px-3 py-2 rounded-xl border border-rose-500/20">
-                            <span>Déficit de caja cubierto por Fran:</span>
-                            <span className="font-black">+{formatCurrency(week.deficitBizGenerated)}</span>
-                         </div>
-                      )}
-                      {week.debtGeneratedThisWeekExp > 0 && (
-                         <div className="flex justify-between items-center bg-orange-950/40 text-orange-300 px-3 py-2 rounded-xl border border-orange-500/20">
-                            <span>Gastos de Fran pasados a deuda:</span>
-                            <span className="font-black">+{formatCurrency(week.debtGeneratedThisWeekExp)}</span>
-                         </div>
-                      )}
-                      {week.reimbursedHistorical > 0 && (
-                         <div className="flex justify-between items-center bg-cyan-950/40 text-cyan-300 px-3 py-2 rounded-xl border border-cyan-500/20">
-                            <span>Reintegro de deuda histórica (Fran):</span>
-                            <span className="font-black">-{formatCurrency(week.reimbursedHistorical)}</span>
-                         </div>
-                      )}
-                      {week.tAdvances > 0 && (
-                         <div className="flex justify-between items-center bg-purple-950/40 text-purple-300 px-3 py-2 rounded-xl border border-purple-500/20">
-                            <span>Adelantos / Créditos a Simón (Otorgados):</span>
-                            <span className="font-black">{formatCurrency(week.tAdvances)}</span>
-                         </div>
-                      )}
-                      <div className={`flex justify-between items-center px-3 py-2 rounded-xl border ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
-                          <span>Base para repartir (Ganancia Neta):</span>
-                          <span className="font-black">{formatCurrency(week.distributable)}</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div className={`p-4 rounded-xl border relative overflow-hidden ${darkMode ? 'bg-blue-950/20 border-blue-500/30' : 'bg-blue-50/50 border-blue-200'}`}>
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
-                        <p className="text-[10px] text-blue-400 font-bold mb-2 uppercase tracking-wider">Liquidación Simón</p>
-                        
-                        <div className="space-y-1 text-xs mb-3">
-                          <div className="flex justify-between items-center text-blue-300">
-                            <span>Ganancia neta (45%):</span>
-                            <span className="font-semibold">{formatCurrency(week.simonGross)}</span>
-                          </div>
-                          {week.advanceRepaid > 0 && (
-                            <div className="flex justify-between items-center text-rose-400">
-                              <span>Descuento por adelanto / crédito:</span>
-                              <span className="font-semibold">-{formatCurrency(week.advanceRepaid)}</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className={`border-t pt-2 flex justify-between items-center ${darkMode ? 'border-blue-500/20' : 'border-blue-200'}`}>
-                          <span className="text-[10px] font-black uppercase text-blue-400">Total en mano:</span>
-                          <span className="font-black text-blue-400 text-lg">
-                            {formatCurrency(week.simon)}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className={`p-4 rounded-xl border relative overflow-hidden ${darkMode ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-emerald-50/50 border-emerald-200'}`}>
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
-                        <p className="text-[10px] text-emerald-400 font-bold mb-2 uppercase tracking-wider">Liquidación Fran</p>
-                        
-                        <div className="space-y-1 text-xs mb-3">
-                          <div className="flex justify-between items-center text-emerald-300">
-                            <span>Ganancia neta (55%):</span>
-                            <span className="font-semibold">{formatCurrency(week.franBase)}</span>
-                          </div>
-                          
-                          {(week.reimbursedThisWeekExp > 0 || week.reimbursedHistorical > 0) && (
-                            <div className="flex justify-between items-center text-emerald-400">
-                              <span>Reintegro de gastos:</span>
-                              <span className="font-semibold">+{formatCurrency(week.reimbursedThisWeekExp + week.reimbursedHistorical)}</span>
-                            </div>
-                          )}
-
-                          {week.advanceRepaid > 0 && (
-                            <div className="flex justify-between items-center text-purple-400">
-                              <span>Adelanto recuperado de Simón:</span>
-                              <span className="font-semibold">+{formatCurrency(week.advanceRepaid)}</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className={`border-t pt-2 flex justify-between items-center ${darkMode ? 'border-emerald-500/20' : 'border-emerald-200'}`}>
-                          <span className="text-[10px] font-black uppercase text-emerald-400">Total en mano:</span>
-                          <span className="font-black text-emerald-400 text-lg">
-                            {formatCurrency(week.franFinal)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-dashed pt-3 flex justify-end">
-                      <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl border shadow-sm ${week.currentDebt > 0 ? (darkMode ? 'text-rose-400 bg-rose-950/30 border-rose-500/30' : 'text-rose-700 bg-rose-50 border-rose-200') : (darkMode ? 'text-emerald-400 bg-emerald-950/30 border-emerald-500/30' : 'text-emerald-700 bg-emerald-50 border-emerald-200')}`}>
-                        <span className="font-medium">Deuda Histórica Acumulada (a favor Fran):</span>
-                        <span className="font-black">{formatCurrency(week.currentDebt)}</span>
-                      </div>
+                    <div className={`p-4 rounded-xl border relative ${darkMode ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-emerald-50'}`}>
+                      <p className="text-[10px] text-emerald-400 font-bold mb-1 uppercase">Liquidación Fran</p>
+                      <p className="font-black text-emerald-400 text-lg">{formatCurrency(week.franFinal)}</p>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           </div>
         );
       };
 
+      // --- INGRESOS ---
       const Incomes = () => {
         const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
         const [source, setSource] = useState('Mercado Libre');
         const [amount, setAmount] = useState('');
         const [desc, setDesc] = useState('');
-        const [showLiqModal, setShowLiqModal] = useState(false);
 
-        const [liqSource, setLiqSource] = useState('Sur distribución');
-        const [liqTitle, setLiqTitle] = useState('');
-        const [liqStartDate, setLiqStartDate] = useState('2026-09-01');
-        const [liqEndDate, setLiqEndDate] = useState('2026-09-15');
-        const [liqTargetWeek, setLiqTargetWeek] = useState(getMondayOfWeek(new Date().toISOString().split('T')[0]));
-
-        useEffect(() => {
-          if (source === 'Mercado Libre' && date) {
-            const d = new Date(date + 'T12:00:00');
-            const day = d.getDay();
-            if (day === 0 || day === 6) {
-              setAmount('130000');
-            } else {
-              setAmount('112000');
-            }
-          } else {
-            setAmount('');
-          }
-        }, [date, source]);
-
-        const handleSubmit = (e) => {
+        const handleSubmit = async (e) => {
           e.preventDefault();
-          if (!amount || !date) return;
+          if (!amount || !date || !supabase) return;
           
           const newIncome = {
             id: Date.now().toString(),
@@ -1000,260 +707,125 @@
             amount: Number(amount),
             desc
           };
-          
-          setIncomes([...incomes, newIncome].sort((a, b) => new Date(b.date) - new Date(a.date)));
+
+          await supabase.from('incomes').insert([newIncome]);
+          loadAllData();
           setAmount('');
           setDesc('');
         };
 
-        const handleSaveLiquidation = (e) => {
-          e.preventDefault();
-          if (!liqStartDate || !liqEndDate || !liqTargetWeek) return;
-
-          const newLiq = {
-            id: 'liq-' + Date.now(),
-            source: liqSource,
-            title: liqTitle || `Liquidación ${liqSource} (${liqStartDate} al ${liqEndDate})`,
-            startDate: liqStartDate,
-            endDate: liqEndDate,
-            targetWeekStart: getMondayOfWeek(liqTargetWeek)
-          };
-
-          setLiquidations([...liquidations, newLiq]);
-          setShowLiqModal(false);
-          setLiqTitle('');
+        const deleteIncome = async (id) => {
+          if (!requestValidation() || !supabase) return;
+          await supabase.from('incomes').delete().eq('id', id);
+          loadAllData();
         };
-
-        const deleteIncome = (id) => {
-          if (!requestValidation()) return;
-          setIncomes(incomes.filter(i => i.id !== id));
-        };
-
-        const deleteLiq = (id) => setLiquidations(liquidations.filter(l => l.id !== id));
-
-        const matchingIncomesForLiq = incomes.filter(i => 
-          i.source === liqSource && i.date >= liqStartDate && i.date <= liqEndDate
-        );
-        const matchingTotal = matchingIncomesForLiq.reduce((acc, curr) => acc + Number(curr.amount), 0);
 
         return (
           <div className="space-y-6">
-            <div className={`p-5 rounded-2xl shadow-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${darkMode ? 'bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 border-blue-500/30' : 'bg-gradient-to-r from-blue-50 via-cyan-50 to-white border-blue-200'}`}>
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30">
-                  <Package size={22} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm">Liquidaciones de Fechas Variables (SUR / ML)</h4>
-                  <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                    Agrupa jornadas trabajadas en fechas variables y asígnalas a la semana en que cobras la liquidación.
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowLiqModal(true)}
-                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold px-4 py-2.5 rounded-xl transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 text-xs whitespace-nowrap"
-              >
-                <PlusCircle size={16} /> Generar Liquidación
-              </button>
-            </div>
-
-            {showLiqModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-                <div className={`w-full max-w-lg p-6 rounded-2xl shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
-                  <div className="flex justify-between items-center mb-4 border-b pb-3">
-                    <h3 className="font-bold text-base flex items-center gap-2">
-                      <Package className="text-cyan-400" size={18} /> Nueva Liquidación Personalizada
-                    </h3>
-                    <button onClick={() => setShowLiqModal(false)} className="text-slate-400 hover:text-slate-100 font-bold text-lg">&times;</button>
-                  </div>
-
-                  <form onSubmit={handleSaveLiquidation} className="space-y-4 text-sm">
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">Empresa / Servicio</label>
-                      <select value={liqSource} onChange={e => setLiqSource(e.target.value)} className={`w-full p-2.5 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                        <option value="Sur distribución">Sur distribución</option>
-                        <option value="Mercado Libre">Mercado Libre</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">Nombre / Identificación (Opcional)</label>
-                      <input type="text" placeholder="Ej. Quincena 1 Septiembre Sur" value={liqTitle} onChange={e => setLiqTitle(e.target.value)} className={`w-full p-2.5 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold mb-1">Desde Fecha (Trabajo)</label>
-                        <input type="date" required value={liqStartDate} onChange={e => setLiqStartDate(e.target.value)} className={`w-full p-2.5 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`} />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold mb-1">Hasta Fecha (Trabajo)</label>
-                        <input type="date" required value={liqEndDate} onChange={e => setLiqEndDate(e.target.value)} className={`w-full p-2.5 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">Semana de Cobro Efectivo (Cualquier día de esa semana)</label>
-                      <input type="date" required value={liqTargetWeek} onChange={e => setLiqTargetWeek(e.target.value)} className={`w-full p-2.5 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`} />
-                      <p className="text-[10px] text-slate-400 mt-1">Los ingresos en este rango se sumarán automáticamente al período semanal correspondiente a esta fecha.</p>
-                    </div>
-
-                    <div className={`p-3 rounded-xl border text-xs ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                      <div className="flex justify-between font-bold mb-1">
-                        <span>Ingresos detectados en este rango:</span>
-                        <span className="text-cyan-400">{matchingIncomesForLiq.length} registros</span>
-                      </div>
-                      <div className="flex justify-between text-sm font-black">
-                        <span>Monto Total a Liquidar:</span>
-                        <span className="text-emerald-400">{formatCurrency(matchingTotal)}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-2">
-                      <button type="button" onClick={() => setShowLiqModal(false)} className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-bold">Cancelar</button>
-                      <button type="submit" className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs">Guardar y Aplicar</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-
-            {liquidations.length > 0 && (
-              <div className={`p-4 rounded-2xl shadow-lg border ${darkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Liquidaciones Asignadas</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {liquidations.map(l => (
-                    <div key={l.id} className={`p-3 rounded-xl border flex justify-between items-center ${darkMode ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                      <div>
-                        <p className="font-bold text-xs text-cyan-400">{l.title}</p>
-                        <p className="text-[10px] text-slate-400">Rango: {l.startDate} al {l.endDate}</p>
-                        <p className="text-[10px] text-emerald-400">Cobro Semana del: {getMondayOfWeek(l.targetWeekStart)}</p>
-                      </div>
-                      <button onClick={() => deleteLiq(l.id)} className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <form onSubmit={handleSubmit} className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><PlusCircle size={18} className="text-cyan-500"/> Cargar Ingreso Individual</h3>
+              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><PlusCircle size={18} className="text-cyan-500"/> Cargar Ingreso</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
                 <div>
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Fecha</label>
-                  <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                  <label className="block font-medium mb-1 text-slate-400">Fecha</label>
+                  <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`} />
                 </div>
                 <div>
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Empresa</label>
-                  <select value={source} onChange={e => setSource(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`}>
+                  <label className="block font-medium mb-1 text-slate-400">Empresa</label>
+                  <select value={source} onChange={e => setSource(e.target.value)} className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`}>
                     <option value="Mercado Libre">Mercado Libre</option>
                     <option value="Sur distribución">Sur distribución</option>
                     <option value="Uber">Uber</option>
                   </select>
                 </div>
                 <div>
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Monto ($)</label>
-                  <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                  <label className="block font-medium mb-1 text-slate-400">Monto ($)</label>
+                  <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`} />
                 </div>
                 <div>
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Descripción (Opcional)</label>
-                  <input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="Ej. Día normal..." className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-cyan-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                  <label className="block font-medium mb-1 text-slate-400">Descripción (Opcional)</label>
+                  <input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="Ej. Día normal..." className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`} />
                 </div>
               </div>
               <button type="submit" className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-cyan-500/20">
-                Guardar Ingreso
+                Guardar en la Nube
               </button>
             </form>
 
             <div className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><Receipt size={18} className="text-cyan-500"/> Historial de Ingresos</h3>
+              <h3 className="text-base font-bold mb-4 flex items-center gap-2"><Receipt size={18} className="text-cyan-500"/> Historial de Ingresos</h3>
               <div className="space-y-3">
                 {incomes.map((inc) => (
-                  <div key={inc.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl transition gap-3 ${darkMode ? 'bg-slate-950/50 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-xl text-white ${
-                        inc.source === 'Mercado Libre' ? 'bg-[#FFE600] text-slate-900 font-black' :
-                        inc.source === 'Uber' ? 'bg-cyan-500 text-slate-950' : 'bg-blue-600'
-                      }`}>
-                        {inc.source === 'Mercado Libre' ? <Calendar size={18} /> : <Truck size={18} />}
-                      </div>
-                      <div>
-                        <p className={`font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{inc.source}</p>
-                        <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{new Date(inc.date + 'T12:00:00').toLocaleDateString('es-AR')} {inc.desc && `- ${inc.desc}`}</p>
-                      </div>
+                  <div key={inc.id} className={`flex items-center justify-between p-4 border rounded-xl ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-white border-slate-100'}`}>
+                    <div>
+                      <p className="font-bold">{inc.source}</p>
+                      <p className="text-xs text-slate-400">{inc.date} {inc.desc && `- ${inc.desc}`}</p>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
-                      <span className={`font-black text-lg ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(inc.amount)}</span>
-                      <button onClick={() => deleteIncome(inc.id)} className={`p-2 rounded-xl transition ${darkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-950/30' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>
-                        <Trash2 size={16} />
-                      </button>
+                    <div className="flex items-center gap-4">
+                      <span className="font-black text-lg">{formatCurrency(inc.amount)}</span>
+                      <button onClick={() => deleteIncome(inc.id)} className="p-2 text-slate-500 hover:text-rose-400"><Trash2 size={16} /></button>
                     </div>
                   </div>
                 ))}
-                {incomes.length === 0 && <p className={`text-center py-6 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>No hay ingresos cargados.</p>}
               </div>
             </div>
           </div>
         );
       };
 
+      // --- GASTOS ---
       const Expenses = () => {
         const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
         const [category, setCategory] = useState('Combustible');
         const [amount, setAmount] = useState('');
         const [paidBy, setPaidBy] = useState('business');
         
-        const categories = [
-          'Cochera', 'Rentas', 'Municipalidad', 'Seguro', 'Monotributo', 
-          'Combustible', 'Inflado', 'Parchado', 'Lámparas', 'Peaje', 'Lavadero', 'Datos celular', 'Otro'
-        ];
+        const categories = ['Cochera', 'Rentas', 'Municipalidad', 'Seguro', 'Monotributo', 'Combustible', 'Inflado', 'Parchado', 'Lámparas', 'Peaje', 'Lavadero', 'Datos celular', 'Otro'];
 
-        const handleSubmit = (e) => {
+        const handleSubmit = async (e) => {
           e.preventDefault();
-          if (!amount || !date) return;
+          if (!amount || !date || !supabase) return;
           
           const newExpense = {
             id: Date.now().toString(),
             date,
             category,
             amount: Number(amount),
-            paidBy
+            paid_by: paidBy
           };
-          
-          setExpenses([...expenses, newExpense].sort((a, b) => new Date(b.date) - new Date(a.date)));
+
+          await supabase.from('expenses').insert([newExpense]);
+          loadAllData();
           setAmount('');
         };
 
-        const deleteExpense = (id) => {
-          if (!requestValidation()) return;
-          setExpenses(expenses.filter(e => e.id !== id));
+        const deleteExpense = async (id) => {
+          if (!requestValidation() || !supabase) return;
+          await supabase.from('expenses').delete().eq('id', id);
+          loadAllData();
         };
 
         return (
           <div className="space-y-6">
             <form onSubmit={handleSubmit} className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><PlusCircle size={18} className="text-rose-500"/> Cargar Gasto</h3>
+              <h3 className="text-base font-bold mb-4 flex items-center gap-2"><PlusCircle size={18} className="text-rose-500"/> Cargar Gasto</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
                 <div>
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Fecha</label>
-                  <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                  <label className="block font-medium mb-1 text-slate-400">Fecha</label>
+                  <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`} />
                 </div>
                 <div>
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Categoría</label>
-                  <select value={category} onChange={e => setCategory(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`}>
+                  <label className="block font-medium mb-1 text-slate-400">Categoría</label>
+                  <select value={category} onChange={e => setCategory(e.target.value)} className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`}>
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Monto ($)</label>
-                  <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                  <label className="block font-medium mb-1 text-slate-400">Monto ($)</label>
+                  <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`} />
                 </div>
                 <div>
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>¿Quién lo pagó?</label>
-                  <select value={paidBy} onChange={e => setPaidBy(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-rose-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`}>
+                  <label className="block font-medium mb-1 text-slate-400">¿Quién lo pagó?</label>
+                  <select value={paidBy} onChange={e => setPaidBy(e.target.value)} className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`}>
                     <option value="business">Fondo del Negocio (Caja)</option>
                     <option value="me">Pagado por Fran</option>
                   </select>
@@ -1265,45 +837,35 @@
             </form>
 
             <div className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><CreditCard size={18} className="text-rose-500"/> Historial de Gastos</h3>
+              <h3 className="text-base font-bold mb-4 flex items-center gap-2"><CreditCard size={18} className="text-rose-500"/> Historial de Gastos</h3>
               <div className="space-y-3">
                 {expenses.map((exp) => (
-                  <div key={exp.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl transition gap-3 ${darkMode ? 'bg-slate-950/50 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20">
-                        <DollarSign size={18} />
-                      </div>
-                      <div>
-                        <p className={`font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{exp.category}</p>
-                        <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{new Date(exp.date + 'T12:00:00').toLocaleDateString('es-AR')}</p>
-                        <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] rounded-lg font-semibold border ${exp.paidBy === 'me' ? (darkMode ? 'bg-orange-950/40 text-orange-400 border-orange-500/30' : 'bg-orange-50 text-orange-700 border-orange-200') : (darkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-600 border-slate-200')}`}>
-                          {exp.paidBy === 'me' ? 'Pagado por Fran' : 'Pagado con Fondo'}
-                        </span>
-                      </div>
+                  <div key={exp.id} className={`flex items-center justify-between p-4 border rounded-xl ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-white border-slate-100'}`}>
+                    <div>
+                      <p className="font-bold">{exp.category}</p>
+                      <p className="text-xs text-slate-400">{exp.date} - {exp.paidBy === 'me' ? 'Fran' : 'Fondo'}</p>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
+                    <div className="flex items-center gap-4">
                       <span className="font-black text-lg text-rose-500">-{formatCurrency(exp.amount)}</span>
-                      <button onClick={() => deleteExpense(exp.id)} className={`p-2 rounded-xl transition ${darkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-950/30' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>
-                        <Trash2 size={16} />
-                      </button>
+                      <button onClick={() => deleteExpense(exp.id)} className="p-2 text-slate-500 hover:text-rose-400"><Trash2 size={16} /></button>
                     </div>
                   </div>
                 ))}
-                {expenses.length === 0 && <p className={`text-center py-6 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>No hay gastos cargados.</p>}
               </div>
             </div>
           </div>
         );
       };
 
+      // --- ADELANTOS ---
       const Advances = () => {
         const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
         const [amount, setAmount] = useState('');
         const [desc, setDesc] = useState('');
 
-        const handleSubmit = (e) => {
+        const handleSubmit = async (e) => {
           e.preventDefault();
-          if (!amount || !date) return;
+          if (!amount || !date || !supabase) return;
           if (!requestValidation()) return;
           
           const newAdv = {
@@ -1312,69 +874,57 @@
             amount: Number(amount),
             desc
           };
-          
-          setAdvances([...advances, newAdv].sort((a, b) => new Date(b.date) - new Date(a.date)));
+
+          await supabase.from('advances').insert([newAdv]);
+          loadAllData();
           setAmount('');
           setDesc('');
         };
 
-        const deleteAdvance = (id) => {
-          if (!requestValidation()) return;
-          setAdvances(advances.filter(a => a.id !== id));
+        const deleteAdvance = async (id) => {
+          if (!requestValidation() || !supabase) return;
+          await supabase.from('advances').delete().eq('id', id);
+          loadAllData();
         };
 
         return (
           <div className="space-y-6">
             <form onSubmit={handleSubmit} className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><Send size={18} className="text-purple-500"/> Cargar Adelanto / Crédito a Simón</h3>
-              <p className={`text-xs mb-4 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                Registra dinero prestado o entregado a tu hermano fuera de los gastos operativos (ej. dinero para comida). Se descontará de su liquidación semanal y se sumará a la tuya.
-              </p>
+              <h3 className="text-base font-bold mb-4 flex items-center gap-2"><Send size={18} className="text-purple-500"/> Cargar Adelanto a Simón</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
                 <div>
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Fecha</label>
-                  <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-purple-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                  <label className="block font-medium mb-1 text-slate-400">Fecha</label>
+                  <input type="date" required value={date} onChange={e => setDate(e.target.value)} className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`} />
                 </div>
                 <div>
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Monto ($)</label>
-                  <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-purple-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                  <label className="block font-medium mb-1 text-slate-400">Monto ($)</label>
+                  <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`} />
                 </div>
                 <div className="md:col-span-2">
-                  <label className={`block font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>Descripción / Motivo</label>
-                  <input type="text" required value={desc} onChange={e => setDesc(e.target.value)} placeholder="Ej. Adelanto para comida..." className={`w-full p-3 border rounded-xl outline-none transition ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100 focus:border-purple-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-500'}`} />
+                  <label className="block font-medium mb-1 text-slate-400">Motivo</label>
+                  <input type="text" required value={desc} onChange={e => setDesc(e.target.value)} placeholder="Ej. Comida..." className={`w-full p-3 border rounded-xl outline-none ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-200'}`} />
                 </div>
               </div>
-              <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-purple-500/20">
+              <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-purple-500/20">
                 Registrar Adelanto
               </button>
             </form>
 
             <div className={`p-6 rounded-2xl shadow-xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}><Receipt size={18} className="text-purple-500"/> Historial de Adelantos</h3>
+              <h3 className="text-base font-bold mb-4 flex items-center gap-2"><Receipt size={18} className="text-purple-500"/> Historial de Adelantos</h3>
               <div className="space-y-3">
                 {advances.map((adv) => (
-                  <div key={adv.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl transition gap-3 ${darkMode ? 'bg-slate-950/50 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
-                        <Send size={18} />
-                      </div>
-                      <div>
-                        <p className={`font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>{adv.desc}</p>
-                        <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{new Date(adv.date + 'T12:00:00').toLocaleDateString('es-AR')}</p>
-                        <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] rounded-lg font-semibold border ${darkMode ? 'bg-purple-950/40 text-purple-300 border-purple-500/30' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
-                          Descontado a Simón / Sumado a Fran
-                        </span>
-                      </div>
+                  <div key={adv.id} className={`flex items-center justify-between p-4 border rounded-xl ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-white border-slate-100'}`}>
+                    <div>
+                      <p className="font-bold">{adv.desc}</p>
+                      <p className="text-xs text-slate-400">{adv.date}</p>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
+                    <div className="flex items-center gap-4">
                       <span className="font-black text-lg text-purple-400">{formatCurrency(adv.amount)}</span>
-                      <button onClick={() => deleteAdvance(adv.id)} className={`p-2 rounded-xl transition ${darkMode ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-950/30' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>
-                        <Trash2 size={16} />
-                      </button>
+                      <button onClick={() => deleteAdvance(adv.id)} className="p-2 text-slate-500 hover:text-rose-400"><Trash2 size={16} /></button>
                     </div>
                   </div>
                 ))}
-                {advances.length === 0 && <p className={`text-center py-6 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>No hay adelantos cargados.</p>}
               </div>
             </div>
           </div>
@@ -1386,34 +936,24 @@
           <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
             <header className={`p-4 rounded-2xl shadow-xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-black text-xl tracking-wider shadow-lg shadow-cyan-500/20">
-                  HL
-                </div>
+                <div className="p-2.5 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-black text-xl tracking-wider">HL</div>
                 <div>
-                  <h1 className="text-xl font-black tracking-tight">Hermanos Logística <span className="text-cyan-400 text-xs px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 uppercase font-bold">PRO</span></h1>
-                  <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Control Financiero & Gestión Operativa</p>
+                  <h1 className="text-xl font-black tracking-tight">Hermanos Logística <span className="text-cyan-400 text-xs px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 uppercase font-bold">CLOUD</span></h1>
+                  <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {loading ? 'Sincronizando con Supabase...' : 'Sincronizado en Tiempo Real'}
+                  </p>
                 </div>
               </div>
 
               <div className={`flex flex-wrap items-center justify-center gap-1 p-1.5 rounded-xl border ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
-                <button onClick={() => setActiveTab('dashboard')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 shadow' : (darkMode ? 'text-slate-400 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900')}`}>
-                  <PieChart size={16} /> Resumen
-                </button>
-                <button onClick={() => setActiveTab('incomes')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'incomes' ? 'bg-cyan-500 text-slate-950 shadow' : (darkMode ? 'text-slate-400 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900')}`}>
-                  <TrendingUp size={16} /> Ingresos
-                </button>
-                <button onClick={() => setActiveTab('expenses')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'expenses' ? 'bg-cyan-500 text-slate-950 shadow' : (darkMode ? 'text-slate-400 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900')}`}>
-                  <TrendingDown size={16} /> Gastos
-                </button>
-                <button onClick={() => setActiveTab('advances')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'advances' ? 'bg-cyan-500 text-slate-950 shadow' : (darkMode ? 'text-slate-400 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900')}`}>
-                  <Send size={16} /> Adelantos
-                </button>
-                <button onClick={() => setActiveTab('reports')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 shadow' : (darkMode ? 'text-slate-400 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900')}`}>
-                  <FileText size={16} /> Informes PDF
-                </button>
+                <button onClick={() => setActiveTab('dashboard')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'}`}><PieChart size={16} /> Resumen</button>
+                <button onClick={() => setActiveTab('incomes')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'incomes' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'}`}><TrendingUp size={16} /> Ingresos</button>
+                <button onClick={() => setActiveTab('expenses')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'expenses' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'}`}><TrendingDown size={16} /> Gastos</button>
+                <button onClick={() => setActiveTab('advances')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'advances' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'}`}><Send size={16} /> Adelantos</button>
+                <button onClick={() => setActiveTab('reports')} className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'}`}><FileText size={16} /> Informes PDF</button>
               </div>
 
-              <button onClick={() => setDarkMode(!darkMode)} className={`p-2.5 rounded-xl border transition ${darkMode ? 'bg-slate-800 border-slate-700 text-yellow-400' : 'bg-slate-100 border-slate-200 text-slate-700'}`}>
+              <button onClick={() => setDarkMode(!darkMode)} className={`p-2.5 rounded-xl border transition ${darkMode ? 'bg-slate-800 border-slate-700 text-yellow-400' : 'bg-slate-100 border-slate-200'}`}>
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
             </header>
