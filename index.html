@@ -27,13 +27,6 @@
   <script type="text/babel">
     const { useState, useMemo, useEffect, useRef } = React;
 
-    // --- CONFIGURACIÓN DE SUPABASE ---
-    // REEMPLAZA ESTOS DOS VALORES CON TUS CREDENCIALES DE SUPABASE:
-    const SUPABASE_URL = "https://potcjvonrebhynjcbjmk.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_4mgBR1bUBc73Z2tDjQSoTA_xNXaDolr";
-    
-    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-
     // --- CÓDIGO DE VALIDACIÓN SEGURIDAD ---
     const VALIDATION_CODE = "05272502";
 
