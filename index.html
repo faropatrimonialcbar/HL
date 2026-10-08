@@ -131,53 +131,15 @@
       return `${y}-${m}-${da}`;
     };
 
-    const initialIncomes = [
-      { id: '1', date: '2026-09-03', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: '2', date: '2026-09-04', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: 'u1', date: '2026-09-05', source: 'Uber', amount: 25000, desc: 'Noche' },
-      { id: 'u2', date: '2026-09-06', source: 'Uber', amount: 30000, desc: 'Tarde' },
-      { id: '3', date: '2026-09-08', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: 's1', date: '2026-09-09', source: 'Sur distribución', amount: 45000, desc: 'Ruta 1' },
-      { id: '4', date: '2026-09-10', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: '5', date: '2026-09-11', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: '6', date: '2026-09-12', source: 'Mercado Libre', amount: 130000, desc: 'Fin de semana' },
-      { id: 'u3', date: '2026-09-13', source: 'Uber', amount: 35000, desc: 'Domingo' },
-      { id: '7', date: '2026-09-14', source: 'Mercado Libre', amount: 78000, desc: 'Ambulancia a otra camioneta' },
-      { id: '8', date: '2026-09-15', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: '9', date: '2026-09-16', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: 's2', date: '2026-09-16', source: 'Sur distribución', amount: 52000, desc: 'Ruta 2' },
-      { id: '10', date: '2026-09-17', source: 'Mercado Libre', amount: 112000, desc: 'Día normal' },
-      { id: 's3', date: '2026-09-17', source: 'Sur distribución', amount: 48000, desc: 'Ruta 1' },
-    ];
-
-    const initialExpenses = [
-      { id: 'e1', date: '2026-09-04', category: 'Combustible', amount: 25000, paidBy: 'business' },
-      { id: 'e2', date: '2026-09-05', category: 'Cochera', amount: 30000, paidBy: 'me' },
-      { id: 'e3', date: '2026-09-08', category: 'Peaje', amount: 2500, paidBy: 'me' },
-      { id: 'e4', date: '2026-09-11', category: 'Combustible', amount: 30000, paidBy: 'business' },
-      { id: 'e5', date: '2026-09-13', category: 'Lavadero', amount: 8000, paidBy: 'me' },
-      { id: 'e6', date: '2026-09-15', category: 'Seguro', amount: 45000, paidBy: 'business' },
-      { id: 'e7', date: '2026-09-16', category: 'Parchado', amount: 5000, paidBy: 'me' },
-    ];
-
-    const initialAdvances = [
-      { id: 'a1', date: '2026-09-10', amount: 15000, desc: 'Dinero para comida' }
-    ];
-
-    const initialLiquidations = [
-      {
-        id: 'liq-demo-1',
-        source: 'Sur distribución',
-        title: 'Liquidación Sur - Quincena 1 Set',
-        startDate: '2026-09-01',
-        endDate: '2026-09-15',
-        targetWeekStart: '2026-09-14'
-      }
-    ];
+    const initialIncomes = [];
+    const initialExpenses = [];
+    const initialAdvances = [];
+    const initialLiquidations = [];
 
     function App() {
       const [activeTab, setActiveTab] = useState('dashboard');
       const [darkMode, setDarkMode] = useState(true);
+
       const [incomes, setIncomes] = useState(() => {
         const saved = localStorage.getItem('logistica_incomes_v5');
         return saved ? JSON.parse(saved) : initialIncomes;
@@ -195,30 +157,44 @@
         return saved ? JSON.parse(saved) : initialLiquidations;
       });
 
-      // --- CARGA DESDE SUPABASE AL INICIAR ---
+      // --- CARGA DIRECTA Y SUSCRIPCIÓN EN TIEMPO REAL DESDE SUPABASE ---
       useEffect(() => {
         if (!supabase) return;
-        async function loadSupabaseData() {
+
+        async function fetchAllData() {
           try {
             const [incRes, expRes, advRes, liqRes] = await Promise.all([
-              supabase.from('incomes').select('*'),
-              supabase.from('expenses').select('*'),
-              supabase.from('advances').select('*'),
-              supabase.from('liquidations').select('*')
+              supabase.from('incomes').select('*').order('date', { ascending: false }),
+              supabase.from('expenses').select('*').order('date', { ascending: false }),
+              supabase.from('advances').select('*').order('date', { ascending: false }),
+              supabase.from('liquidations').select('*').order('startDate', { ascending: false })
             ]);
 
-            if (incRes.data && incRes.data.length > 0) setIncomes(incRes.data);
-            if (expRes.data && expRes.data.length > 0) setExpenses(expRes.data);
-            if (advRes.data && advRes.data.length > 0) setAdvances(advRes.data);
-            if (liqRes.data && liqRes.data.length > 0) setLiquidations(liqRes.data);
+            if (incRes.data) setIncomes(incRes.data);
+            if (expRes.data) setExpenses(expRes.data);
+            if (advRes.data) setAdvances(advRes.data);
+            if (liqRes.data) setLiquidations(liqRes.data);
           } catch (e) {
-            console.error("Error cargando de Supabase:", e);
+            console.error("Error sincronizando con Supabase:", e);
           }
         }
-        loadSupabaseData();
+
+        fetchAllData();
+
+        // Suscripción Realtime para reflejar cambios entre múltiples dispositivos al instante
+        const channel = supabase.channel('schema-db-changes')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'incomes' }, fetchAllData)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchAllData)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'advances' }, fetchAllData)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'liquidations' }, fetchAllData)
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
       }, []);
 
-      // --- RESPALDO LOCALSTORAGE ---
+      // Respaldo de seguridad en localStorage
       useEffect(() => {
         localStorage.setItem('logistica_incomes_v5', JSON.stringify(incomes));
       }, [incomes]);
@@ -235,11 +211,15 @@
         localStorage.setItem('logistica_liquidations_v1', JSON.stringify(liquidations));
       }, [liquidations]);
 
-      // --- FUNCIONES DE PERSISTENCIA EN SUPABASE ---
+      // --- FUNCIONES DE PERSISTENCIA DIRECTA EN SUPABASE ---
       const addIncome = async (newInc) => {
-        setIncomes(prev => [...prev, newInc]);
+        setIncomes(prev => [...prev, newInc].sort((a, b) => new Date(b.date) - new Date(a.date)));
         if (supabase) {
-          await supabase.from('incomes').insert([newInc]);
+          const { error } = await supabase.from('incomes').insert([newInc]);
+          if (error) {
+            console.error("Error al guardar ingreso en Supabase:", error);
+            alert("Error al guardar en la nube. Verifique conexión/permisos.");
+          }
         }
       };
 
@@ -247,14 +227,22 @@
         if (!requestValidation()) return;
         setIncomes(prev => prev.filter(item => item.id !== id));
         if (supabase) {
-          await supabase.from('incomes').delete().eq('id', id);
+          const { error } = await supabase.from('incomes').delete().eq('id', id);
+          if (error) {
+            console.error("Error al eliminar ingreso en Supabase:", error);
+            alert("Error al eliminar en la nube.");
+          }
         }
       };
 
       const addExpense = async (newExp) => {
-        setExpenses(prev => [...prev, newExp]);
+        setExpenses(prev => [...prev, newExp].sort((a, b) => new Date(b.date) - new Date(a.date)));
         if (supabase) {
-          await supabase.from('expenses').insert([newExp]);
+          const { error } = await supabase.from('expenses').insert([newExp]);
+          if (error) {
+            console.error("Error al guardar gasto en Supabase:", error);
+            alert("Error al guardar en la nube.");
+          }
         }
       };
 
@@ -262,14 +250,22 @@
         if (!requestValidation()) return;
         setExpenses(prev => prev.filter(item => item.id !== id));
         if (supabase) {
-          await supabase.from('expenses').delete().eq('id', id);
+          const { error } = await supabase.from('expenses').delete().eq('id', id);
+          if (error) {
+            console.error("Error al eliminar gasto en Supabase:", error);
+            alert("Error al eliminar en la nube.");
+          }
         }
       };
 
       const addAdvance = async (newAdv) => {
-        setAdvances(prev => [...prev, newAdv]);
+        setAdvances(prev => [...prev, newAdv].sort((a, b) => new Date(b.date) - new Date(a.date)));
         if (supabase) {
-          await supabase.from('advances').insert([newAdv]);
+          const { error } = await supabase.from('advances').insert([newAdv]);
+          if (error) {
+            console.error("Error al guardar adelanto en Supabase:", error);
+            alert("Error al guardar en la nube.");
+          }
         }
       };
 
@@ -277,14 +273,22 @@
         if (!requestValidation()) return;
         setAdvances(prev => prev.filter(item => item.id !== id));
         if (supabase) {
-          await supabase.from('advances').delete().eq('id', id);
+          const { error } = await supabase.from('advances').delete().eq('id', id);
+          if (error) {
+            console.error("Error al eliminar adelanto en Supabase:", error);
+            alert("Error al eliminar en la nube.");
+          }
         }
       };
 
       const addLiquidation = async (newLiq) => {
         setLiquidations(prev => [...prev, newLiq]);
         if (supabase) {
-          await supabase.from('liquidations').insert([newLiq]);
+          const { error } = await supabase.from('liquidations').insert([newLiq]);
+          if (error) {
+            console.error("Error al guardar liquidación en Supabase:", error);
+            alert("Error al guardar en la nube.");
+          }
         }
       };
 
@@ -292,7 +296,11 @@
         if (!requestValidation()) return;
         setLiquidations(prev => prev.filter(item => item.id !== id));
         if (supabase) {
-          await supabase.from('liquidations').delete().eq('id', id);
+          const { error } = await supabase.from('liquidations').delete().eq('id', id);
+          if (error) {
+            console.error("Error al eliminar liquidación en Supabase:", error);
+            alert("Error al eliminar en la nube.");
+          }
         }
       };
 
@@ -1094,7 +1102,7 @@
             desc
           };
           
-          setIncomes([...incomes, newIncome].sort((a, b) => new Date(b.date) - new Date(a.date)));
+          addIncome(newIncome);
           setAmount('');
           setDesc('');
         };
@@ -1112,17 +1120,10 @@
             targetWeekStart: getMondayOfWeek(liqTargetWeek)
           };
 
-          setLiquidations([...liquidations, newLiq]);
+          addLiquidation(newLiq);
           setShowLiqModal(false);
           setLiqTitle('');
         };
-
-        const deleteIncome = (id) => {
-          if (!requestValidation()) return;
-          setIncomes(incomes.filter(i => i.id !== id));
-        };
-
-        const deleteLiq = (id) => setLiquidations(liquidations.filter(l => l.id !== id));
 
         const matchingIncomesForLiq = incomes.filter(i => 
           i.source === liqSource && i.date >= liqStartDate && i.date <= liqEndDate
@@ -1223,7 +1224,7 @@
                         <p className="text-[10px] text-slate-400">Rango: {l.startDate} al {l.endDate}</p>
                         <p className="text-[10px] text-emerald-400">Cobro Semana del: {getMondayOfWeek(l.targetWeekStart)}</p>
                       </div>
-                      <button onClick={() => deleteLiq(l.id)} className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400">
+                      <button onClick={() => deleteLiquidation(l.id)} className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -1315,14 +1316,9 @@
             amount: Number(amount),
             paidBy
           };
-          
-          setExpenses([...expenses, newExpense].sort((a, b) => new Date(b.date) - new Date(a.date)));
-          setAmount('');
-        };
 
-        const deleteExpense = (id) => {
-          if (!requestValidation()) return;
-          setExpenses(expenses.filter(e => e.id !== id));
+          addExpense(newExpense);
+          setAmount('');
         };
 
         return (
@@ -1406,14 +1402,9 @@
             desc
           };
           
-          setAdvances([...advances, newAdv].sort((a, b) => new Date(b.date) - new Date(a.date)));
+          addAdvance(newAdv);
           setAmount('');
           setDesc('');
-        };
-
-        const deleteAdvance = (id) => {
-          if (!requestValidation()) return;
-          setAdvances(advances.filter(a => a.id !== id));
         };
 
         return (
