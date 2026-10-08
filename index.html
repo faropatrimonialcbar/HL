@@ -11,6 +11,8 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <!-- Babel Standalone para JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Supabase Client JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Libraries for PDF Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -26,6 +28,12 @@
 
   <script type="text/babel">
     const { useState, useMemo, useEffect, useRef } = React;
+
+    // --- CONFIGURACIÓN DE SUPABASE ---
+    const SUPABASE_URL = "https://potcjvonrebhynjcbjmk.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_4mgBR1bUBc73Z2tDjQSoTA_xNXaDolr";
+    
+    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     // --- CÓDIGO DE VALIDACIÓN SEGURIDAD ---
     const VALIDATION_CODE = "05272502";
@@ -187,6 +195,30 @@
         return saved ? JSON.parse(saved) : initialLiquidations;
       });
 
+      // --- CARGA DESDE SUPABASE AL INICIAR ---
+      useEffect(() => {
+        if (!supabase) return;
+        async function loadSupabaseData() {
+          try {
+            const [incRes, expRes, advRes, liqRes] = await Promise.all([
+              supabase.from('incomes').select('*'),
+              supabase.from('expenses').select('*'),
+              supabase.from('advances').select('*'),
+              supabase.from('liquidations').select('*')
+            ]);
+
+            if (incRes.data && incRes.data.length > 0) setIncomes(incRes.data);
+            if (expRes.data && expRes.data.length > 0) setExpenses(expRes.data);
+            if (advRes.data && advRes.data.length > 0) setAdvances(advRes.data);
+            if (liqRes.data && liqRes.data.length > 0) setLiquidations(liqRes.data);
+          } catch (e) {
+            console.error("Error cargando de Supabase:", e);
+          }
+        }
+        loadSupabaseData();
+      }, []);
+
+      // --- RESPALDO LOCALSTORAGE ---
       useEffect(() => {
         localStorage.setItem('logistica_incomes_v5', JSON.stringify(incomes));
       }, [incomes]);
@@ -202,6 +234,67 @@
       useEffect(() => {
         localStorage.setItem('logistica_liquidations_v1', JSON.stringify(liquidations));
       }, [liquidations]);
+
+      // --- FUNCIONES DE PERSISTENCIA EN SUPABASE ---
+      const addIncome = async (newInc) => {
+        setIncomes(prev => [...prev, newInc]);
+        if (supabase) {
+          await supabase.from('incomes').insert([newInc]);
+        }
+      };
+
+      const deleteIncome = async (id) => {
+        if (!requestValidation()) return;
+        setIncomes(prev => prev.filter(item => item.id !== id));
+        if (supabase) {
+          await supabase.from('incomes').delete().eq('id', id);
+        }
+      };
+
+      const addExpense = async (newExp) => {
+        setExpenses(prev => [...prev, newExp]);
+        if (supabase) {
+          await supabase.from('expenses').insert([newExp]);
+        }
+      };
+
+      const deleteExpense = async (id) => {
+        if (!requestValidation()) return;
+        setExpenses(prev => prev.filter(item => item.id !== id));
+        if (supabase) {
+          await supabase.from('expenses').delete().eq('id', id);
+        }
+      };
+
+      const addAdvance = async (newAdv) => {
+        setAdvances(prev => [...prev, newAdv]);
+        if (supabase) {
+          await supabase.from('advances').insert([newAdv]);
+        }
+      };
+
+      const deleteAdvance = async (id) => {
+        if (!requestValidation()) return;
+        setAdvances(prev => prev.filter(item => item.id !== id));
+        if (supabase) {
+          await supabase.from('advances').delete().eq('id', id);
+        }
+      };
+
+      const addLiquidation = async (newLiq) => {
+        setLiquidations(prev => [...prev, newLiq]);
+        if (supabase) {
+          await supabase.from('liquidations').insert([newLiq]);
+        }
+      };
+
+      const deleteLiquidation = async (id) => {
+        if (!requestValidation()) return;
+        setLiquidations(prev => prev.filter(item => item.id !== id));
+        if (supabase) {
+          await supabase.from('liquidations').delete().eq('id', id);
+        }
+      };
 
       const isDay30 = useMemo(() => {
         const today = new Date();
