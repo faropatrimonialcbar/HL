@@ -173,7 +173,13 @@
             if (incRes.data) setIncomes(incRes.data);
             if (expRes.data) setExpenses(expRes.data);
             if (advRes.data) setAdvances(advRes.data);
-            if (liqRes.data) setLiquidations(liqRes.data);
+            if (liqRes.data) {
+              const formattedLiqs = liqRes.data.map(l => ({
+                ...l,
+                title: l.title || `Liquidación ${l.source} (${l.startDate} al ${l.endDate})`
+              }));
+              setLiquidations(formattedLiqs);
+            }
           } catch (e) {
             console.error("Error sincronizando con Supabase:", e);
           }
@@ -181,7 +187,7 @@
 
         fetchAllData();
 
-        // Suscripción Realtime para reflejar cambios entre múltiples dispositivos al instante
+        // Suscripción Realtime
         const channel = supabase.channel('schema-db-changes')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'incomes' }, fetchAllData)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchAllData)
@@ -218,7 +224,7 @@
           const { error } = await supabase.from('incomes').insert([newInc]);
           if (error) {
             console.error("Error al guardar ingreso en Supabase:", error);
-            alert("Error al guardar en la nube. Verifique conexión/permisos.");
+            alert("Error al guardar en la nube.");
           }
         }
       };
@@ -284,10 +290,18 @@
       const addLiquidation = async (newLiq) => {
         setLiquidations(prev => [...prev, newLiq]);
         if (supabase) {
-          const { error } = await supabase.from('liquidations').insert([newLiq]);
+          // Filtrar el objeto para asegurar compatibilidad con la tabla
+          const payload = {
+            id: newLiq.id,
+            source: newLiq.source,
+            startDate: newLiq.startDate,
+            endDate: newLiq.endDate,
+            targetWeekStart: newLiq.targetWeekStart
+          };
+          const { error } = await supabase.from('liquidations').insert([payload]);
           if (error) {
             console.error("Error al guardar liquidación en Supabase:", error);
-            alert("Error al guardar en la nube.");
+            alert("Error al guardar liquidación en la nube.");
           }
         }
       };
