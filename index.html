@@ -167,17 +167,35 @@
               supabase.from('incomes').select('*').order('date', { ascending: false }),
               supabase.from('expenses').select('*').order('date', { ascending: false }),
               supabase.from('advances').select('*').order('date', { ascending: false }),
-              supabase.from('liquidations').select('*').order('startDate', { ascending: false })
+              supabase.from('liquidations').select('*')
             ]);
 
             if (incRes.data) setIncomes(incRes.data);
-            if (expRes.data) setExpenses(expRes.data);
+            if (expRes.data) {
+              const formattedExp = expRes.data.map(e => ({
+                id: e.id,
+                date: e.date,
+                category: e.category,
+                amount: e.amount,
+                paidBy: e.paidBy || e.paidby || 'business'
+              }));
+              setExpenses(formattedExp);
+            }
             if (advRes.data) setAdvances(advRes.data);
             if (liqRes.data) {
-              const formattedLiqs = liqRes.data.map(l => ({
-                ...l,
-                title: l.title || `Liquidación ${l.source} (${l.startDate} al ${l.endDate})`
-              }));
+              const formattedLiqs = liqRes.data.map(l => {
+                const startDate = l.startDate || l.startdate;
+                const endDate = l.endDate || l.enddate;
+                const targetWeekStart = l.targetWeekStart || l.targetweekstart;
+                return {
+                  id: l.id,
+                  source: l.source,
+                  startDate,
+                  endDate,
+                  targetWeekStart,
+                  title: l.title || `Liquidación ${l.source} (${startDate} al ${endDate})`
+                };
+              });
               setLiquidations(formattedLiqs);
             }
           } catch (e) {
@@ -224,7 +242,7 @@
           const { error } = await supabase.from('incomes').insert([newInc]);
           if (error) {
             console.error("Error al guardar ingreso en Supabase:", error);
-            alert("Error al guardar en la nube.");
+            alert("Error al guardar ingreso en la nube: " + error.message);
           }
         }
       };
@@ -243,12 +261,22 @@
 
       const addExpense = async (newExp) => {
         setExpenses(prev => [...prev, newExp].sort((a, b) => new Date(b.date) - new Date(a.date)));
-        if (supabase) {
-          const { error } = await supabase.from('expenses').insert([newExp]);
-          if (error) {
-            console.error("Error al guardar gasto en Supabase:", error);
-            alert("Error al guardar en la nube.");
-          }
+        if (!supabase) return;
+
+        const payload = {
+          id: newExp.id,
+          date: newExp.date,
+          category: newExp.category,
+          amount: newExp.amount,
+          paidBy: newExp.paidBy,
+          paidby: newExp.paidBy
+        };
+
+        let { error } = await supabase.from('expenses').insert([payload]);
+
+        if (error) {
+          console.error("Error al guardar gasto:", error);
+          alert("Error al guardar gasto en la nube: " + error.message);
         }
       };
 
@@ -270,7 +298,7 @@
           const { error } = await supabase.from('advances').insert([newAdv]);
           if (error) {
             console.error("Error al guardar adelanto en Supabase:", error);
-            alert("Error al guardar en la nube.");
+            alert("Error al guardar adelanto en la nube: " + error.message);
           }
         }
       };
@@ -289,20 +317,25 @@
 
       const addLiquidation = async (newLiq) => {
         setLiquidations(prev => [...prev, newLiq]);
-        if (supabase) {
-          // Filtrar el objeto para asegurar compatibilidad con la tabla
-          const payload = {
-            id: newLiq.id,
-            source: newLiq.source,
-            startDate: newLiq.startDate,
-            endDate: newLiq.endDate,
-            targetWeekStart: newLiq.targetWeekStart
-          };
-          const { error } = await supabase.from('liquidations').insert([payload]);
-          if (error) {
-            console.error("Error al guardar liquidación en Supabase:", error);
-            alert("Error al guardar liquidación en la nube.");
-          }
+        if (!supabase) return;
+
+        const fullPayload = {
+          id: newLiq.id,
+          source: newLiq.source,
+          title: newLiq.title,
+          "startDate": newLiq.startDate,
+          "endDate": newLiq.endDate,
+          "targetWeekStart": newLiq.targetWeekStart,
+          startdate: newLiq.startDate,
+          enddate: newLiq.endDate,
+          targetweekstart: newLiq.targetWeekStart
+        };
+
+        let { error } = await supabase.from('liquidations').insert([fullPayload]);
+
+        if (error) {
+          console.error("Error al guardar liquidación:", error);
+          alert("Error al guardar liquidación en la nube: " + error.message);
         }
       };
 
