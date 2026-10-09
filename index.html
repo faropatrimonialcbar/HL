@@ -177,16 +177,16 @@
                 date: e.date,
                 category: e.category,
                 amount: e.amount,
-                paidBy: e.paidBy || e.paidby || 'business'
+                paidBy: e.paidBy || e.paidby || e.paid_by || 'business'
               }));
               setExpenses(formattedExp);
             }
             if (advRes.data) setAdvances(advRes.data);
             if (liqRes.data) {
               const formattedLiqs = liqRes.data.map(l => {
-                const startDate = l.startDate || l.startdate;
-                const endDate = l.endDate || l.enddate;
-                const targetWeekStart = l.targetWeekStart || l.targetweekstart;
+                const startDate = l.startDate || l.startdate || l.start_date;
+                const endDate = l.endDate || l.enddate || l.end_date;
+                const targetWeekStart = l.targetWeekStart || l.targetweekstart || l.target_week_start;
                 return {
                   id: l.id,
                   source: l.source,
@@ -269,10 +269,11 @@
           category: newExp.category,
           amount: newExp.amount,
           paidBy: newExp.paidBy,
-          paidby: newExp.paidBy
+          paidby: newExp.paidBy,
+          paid_by: newExp.paidBy
         };
 
-        let { error } = await supabase.from('expenses').insert([payload]);
+        const { error } = await supabase.from('expenses').insert([payload]);
 
         if (error) {
           console.error("Error al guardar gasto:", error);
@@ -319,19 +320,22 @@
         setLiquidations(prev => [...prev, newLiq]);
         if (!supabase) return;
 
-        const fullPayload = {
+        const payload = {
           id: newLiq.id,
           source: newLiq.source,
           title: newLiq.title,
-          "startDate": newLiq.startDate,
-          "endDate": newLiq.endDate,
-          "targetWeekStart": newLiq.targetWeekStart,
+          startDate: newLiq.startDate,
+          endDate: newLiq.endDate,
+          targetWeekStart: newLiq.targetWeekStart,
           startdate: newLiq.startDate,
           enddate: newLiq.endDate,
-          targetweekstart: newLiq.targetWeekStart
+          targetweekstart: newLiq.targetWeekStart,
+          start_date: newLiq.startDate,
+          end_date: newLiq.endDate,
+          target_week_start: newLiq.targetWeekStart
         };
 
-        let { error } = await supabase.from('liquidations').insert([fullPayload]);
+        const { error } = await supabase.from('liquidations').insert([payload]);
 
         if (error) {
           console.error("Error al guardar liquidación:", error);
